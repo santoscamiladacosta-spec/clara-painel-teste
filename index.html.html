@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Clara | Acesso seguro</title>
+<style>:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#163353;background:#f2f5fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}body.panel-mode{display:block;padding:0;background:#f3f6fa}body.panel-mode .card{width:100%;max-width:none;padding:0;border:0;box-shadow:none;background:transparent}body.panel-mode .card>.brand,body.panel-mode .card>h1,body.panel-mode .card>#intro,body.panel-mode .card>small{display:none}body.panel-mode #signed{display:block}body.panel-mode #status{margin:0;border-radius:0}body.panel-mode #who,body.panel-mode #membership{margin:7px 20px}body.panel-mode #logout{width:auto;margin:7px 20px 12px}#demo-frame{display:block;width:100%;height:calc(100vh - 160px);min-height:650px;border:0}#demo-warning{padding:10px 20px;background:#fff4dc;color:#755214;font-weight:700}.card{background:white;border:1px solid #dde5f0;border-radius:22px;box-shadow:0 16px 45px #1736570d;width:min(100%,510px);padding:34px}.brand{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#193e6b;color:white;font-weight:800;font-size:26px}h1{font-size:27px;margin:18px 0 5px}p{color:#58718c;line-height:1.6}label{display:block;font-size:13px;font-weight:650;margin:16px 0 6px}input{width:100%;border:1px solid #c8d4e3;border-radius:10px;padding:12px;font:inherit}button{border:0;background:#193e6b;color:white;padding:12px 16px;border-radius:10px;cursor:pointer;font-weight:650;margin-top:18px;width:100%}button.secondary{background:#e9eff7;color:#193e6b;margin-top:9px}button:disabled{opacity:.55;cursor:wait}.status{padding:12px;background:#eef3fa;border-radius:10px;margin-top:15px;white-space:pre-wrap;font-size:14px}.warn{background:#fff4e8;color:#764315}.hidden{display:none}small{display:block;color:#71849a;margin-top:20px}</style>
+</head><body><main class="card"><span class="brand">C</span><h1>Clara — Gerente de Operações</h1><p id="intro">Acesso reservado a usuários convidados.</p><div id="status" class="status" role="status">Verificando configuração...</div>
+<section id="login" class="hidden"><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="login-btn" type="submit">Entrar</button></form><button id="recover" class="secondary" type="button">Esqueci minha senha</button></section>
+<section id="setpass" class="hidden"><p>Defina sua senha de acesso.</p><form id="pass-form"><label for="new-password">Nova senha (mínimo 8 caracteres)</label><input id="new-password" type="password" autocomplete="new-password" required minlength="8"><button id="savepass" type="submit">Salvar senha</button></form></section>
+<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button><div id="demo-area" class="hidden"><div id="demo-warning">PRÉVIA VISUAL — dados fictícios. As alterações neste painel não são salvas no Supabase.</div><iframe id="demo-frame" title="Painel Premium Clara — demonstração" loading="lazy"></iframe></div></section>
+<small>Ambiente piloto. Nenhum dado real de cliente é incorporado a esta página.</small></main>
+<script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
+(async()=>{
+const $=id=>document.getElementById(id), sections=['login','setpass','signed'];let client;
+function show(id){sections.forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id!=='signed'){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('demo-frame').removeAttribute('src')}}
+function msg(t,w=false){$('status').textContent=t;$('status').classList.toggle('warn',w)}
+const c=window.CLARA_CONFIG||{};
+if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(c.supabaseUrl||'')||!c.supabasePublishableKey||c.supabasePublishableKey.startsWith('COLE_')){msg('Configuração pendente: preencha config.js com a URL do projeto e a chave publicável do Supabase.',true);return}
+if(!window.supabase?.createClient){msg('Não foi possível carregar a biblioteca de autenticação. Confira a conexão.',true);return}
+client=window.supabase.createClient(c.supabaseUrl,c.supabasePublishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
+const url=new URL(location.href),hash=new URLSearchParams(location.hash.slice(1));
+const err=url.searchParams.get('error_description')||hash.get('error_description');
+if(err)msg('O link de acesso falhou ou expirou. Solicite um novo convite ou recuperação de senha. '+err,true);
+let recovery=hash.get('type')==='recovery'||url.searchParams.get('type')==='recovery';
+async function refresh(){const {data,error}=await client.auth.getSession();if(error){msg('Erro de sessão: '+error.message,true);show('login');return}
+const session=data.session;if(!session){show('login');if(!err)msg('Entre com seu e-mail e senha.');return}
+if(recovery){show('setpass');msg('Crie uma nova senha para concluir a recuperação.');return}
+show('signed');$('who').textContent='Conectada como '+session.user.email;
+const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
+if(memberErr){$('membership').textContent='Não foi possível validar sua autorização. O painel permanecerá bloqueado.';msg('Acesso aos dados bloqueado até validar as permissões.',true);return}
+if(!members?.length){$('membership').textContent='Sua conta existe, mas ainda não foi vinculada a uma empresa pela administradora.';msg('Aguardando autorização da administradora.');return}
+$('membership').textContent='Vínculo validado: '+members.map(m=>(m.clara_empresas?.nome||'Empresa')+' — '+m.perfil).join('; ')+'.';msg('Login confirmado. Prévia visual do painel liberada (dados fictícios).');$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');if(!$('demo-frame').getAttribute('src'))$('demo-frame').src='./painel-demonstracao.html';const role=members.some(m=>m.perfil==='proprietario')?'proprietario':'outro';const convitesHabilitados=role==='proprietario'&&c.habilitarConvites===true;$('demo-frame').onload=()=>{$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin)};if($('demo-frame').contentDocument?.readyState==='complete')$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin);
+}
+window.addEventListener('message',async event=>{
+ if(event.origin!==location.origin||event.source!==$('demo-frame').contentWindow||event.data?.tipo!=='CLARA_INVITE_REQUEST')return;
+ const send=(ok,erro)=>event.source.postMessage({tipo:'CLARA_INVITE_RESULT',ok,erro},location.origin);
+ if(c.habilitarConvites!==true)return send(false,'Convites não habilitados.');
+ const {data:{user},error:authErr}=await client.auth.getUser();if(authErr||!user)return send(false,'Sessão expirada. Entre novamente.');
+ const {data:owners,error:ownerErr}=await client.from('clara_membros').select('empresa_id').eq('usuario_id',user.id).eq('perfil','proprietario').eq('ativo',true);
+ if(ownerErr||!owners?.length)return send(false,'Somente o proprietário pode convidar.');
+ try{const {data,error}=await client.functions.invoke('clara-convidar-funcionario',{body:event.data.payload});if(error)throw new Error(data?.erro||error.message);if(!data?.sucesso)throw new Error(data?.erro||'Convite não confirmado.');send(true,'');}
+ catch(e){send(false,e.message||'Falha na solicitação.');}
+});
+client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){recovery=true;show('setpass');msg('Defina uma nova senha para continuar.')} });
+$('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-btn').disabled=true;msg('Verificando acesso...');const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('login-btn').disabled=false;if(error){msg('Não foi possível entrar: '+error.message,true);return}await refresh()});
+$('recover').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){msg('Digite seu e-mail acima antes de solicitar recuperação.',true);return}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});msg(error?'Não foi possível solicitar: '+error.message:'Se o e-mail estiver cadastrado, você receberá instruções de recuperação.',!!error)});
+$('pass-form').addEventListener('submit',async e=>{e.preventDefault();$('savepass').disabled=true;const {error}=await client.auth.updateUser({password:$('new-password').value});$('savepass').disabled=false;if(error){msg('Erro ao definir senha: '+error.message,true);return}recovery=false;history.replaceState({},'',location.pathname);msg('Senha salva. Acesso autenticado.');await refresh()});
+$('logout').addEventListener('click',async()=>{await client.auth.signOut();history.replaceState({},'',location.pathname);recovery=false;await refresh()});
+// Em links de convite, o Supabase cria uma sessão; exigir senha antes do uso.
+if(hash.get('type')==='invite'||url.searchParams.get('type')==='invite'){recovery=true}
+await refresh();
+})();
+</script></body></html>
