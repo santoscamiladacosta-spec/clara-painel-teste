@@ -23,10 +23,24 @@ async function refresh(){const {data,error}=await client.auth.getSession();if(er
 const session=data.session;if(!session){show('login');if(!err)msg('Entre com seu e-mail e senha.');return}
 if(recovery){show('setpass');msg('Crie uma nova senha para concluir a recuperação.');return}
 show('signed');$('who').textContent='Conectada como '+session.user.email;
-const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
+const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,permissoes,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
 if(memberErr){$('membership').textContent='Não foi possível validar sua autorização. O painel permanecerá bloqueado.';msg('Acesso aos dados bloqueado até validar as permissões.',true);return}
 if(!members?.length){$('membership').textContent='Sua conta existe, mas ainda não foi vinculada a uma empresa pela administradora.';msg('Aguardando autorização da administradora.');return}
-$('membership').textContent='Vínculo validado: '+members.map(m=>(m.clara_empresas?.nome||'Empresa')+' — '+m.perfil).join('; ')+'.';msg('Login confirmado. Prévia visual do painel liberada (dados fictícios).');$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');if(!$('demo-frame').getAttribute('src'))$('demo-frame').src='./painel-demonstracao.html';const role=members.some(m=>m.perfil==='proprietario')?'proprietario':'outro';const convitesHabilitados=role==='proprietario'&&c.habilitarConvites===true;$('demo-frame').onload=()=>{$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin)};if($('demo-frame').contentDocument?.readyState==='complete')$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin);
+if(members.length!==1){$('membership').textContent='Acesso bloqueado: vínculo ambíguo. Contate o suporte.';msg('Não foi possível identificar uma única empresa para esta conta.',true);return}
+const member=members[0];
+const allowedTabs=['hoje','empresa','processos','indicadores','acoes','manual','diario','notificacoes','clara'];
+const owner=member.perfil==='proprietario';
+const role=['proprietario','gestor','funcionario'].includes(member.perfil)?member.perfil:'sem_acesso';
+const permitted=owner?allowedTabs:Object.keys(member.permissoes||{}).filter(k=>allowedTabs.includes(k)&&member.permissoes[k]===true);
+const convitesHabilitados=owner&&c.habilitarConvites===true;
+$('membership').textContent='Vínculo validado: '+(member.clara_empresas?.nome||'Empresa')+' — '+role+'.';
+msg('Login confirmado. Permissões carregadas. Conteúdo operacional ainda demonstrativo.');
+$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');
+const permissionMessage={tipo:'CLARA_DEMO_ROLE',perfil:role,permissoes:permitted,convitesHabilitados};
+const frame=$('demo-frame');
+frame.onload=()=>frame.contentWindow.postMessage(permissionMessage,location.origin);
+if(!frame.getAttribute('src'))frame.src='./painel-demonstracao.html';
+else if(frame.contentDocument?.readyState==='complete')frame.contentWindow.postMessage(permissionMessage,location.origin);
 }
 window.addEventListener('message',async event=>{
  if(event.origin!==location.origin||event.source!==$('demo-frame').contentWindow||event.data?.tipo!=='CLARA_INVITE_REQUEST')return;
