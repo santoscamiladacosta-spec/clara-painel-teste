@@ -1,0 +1,28 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Autorizar Clara</title><style>body{font:16px system-ui;background:#f4f6fa;color:#172e4e;margin:0;padding:24px}main{max-width:520px;margin:7vh auto;background:white;border-radius:20px;padding:32px;box-shadow:0 12px 40px #172e4e12}h1{font-size:26px}label{display:block;margin:16px 0}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #bbc7d6;border-radius:8px}button{padding:12px 18px;border:0;border-radius:8px;margin:8px 8px 0 0;background:#172e4e;color:white;cursor:pointer}button:disabled{opacity:.5}#status{white-space:pre-wrap}small{color:#52647a}</style><main><small>CLARA | GERENTE DE OPERAÇÕES</small><h1>Conectar minha memória</h1><p id="status" role="status">Verificando solicitação…</p><form id="login" hidden><label>E-mail do Painel Clara<input type="email" id="email" autocomplete="username" required></label><label>Senha<input type="password" id="password" autocomplete="current-password" required></label><button>Entrar</button></form><section id="consent" hidden><p>Aplicativo: <strong id="client"></strong></p><p id="scope"></p><p>A conexão permite consultar e registrar resumos, decisões e pendências das empresas em que você é proprietário ativo. Os PDFs e a escolha de gerar JSON continuam como antes.</p><p>Autorize apenas se você iniciou esta conexão no ChatGPT. Você pode negar o acesso.</p><button id="approve">Autorizar conexão</button><button id="deny">Não autorizar</button></section></main><script src="./config.js"></script><script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const $=id=>document.getElementById(id),cfg=window.CLARA_CONFIG;
+const id=new URL(location.href).searchParams.get('authorization_id');
+let client;
+const status=t=>$('status').textContent=t;
+async function prepare(){
+$('consent').hidden=true;
+if(!id||!cfg?.supabaseUrl||!cfg?.supabasePublishableKey){status('Solicitação de conexão ausente ou configuração indisponível. Inicie a conexão pelo plugin no ChatGPT.');return;}
+client??=createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
+const {data:{user},error}=await client.auth.getUser();
+if(error||!user){$('login').hidden=false;status('Entre com sua conta do Painel Clara para conferir a solicitação.');return;}
+$('login').hidden=true;
+const {data,error:detailError}=await client.auth.oauth.getAuthorizationDetails(id);
+if(detailError||!data){status('Não foi possível validar a solicitação. Confira se o OAuth Server está habilitado e reinicie a conexão pelo ChatGPT.');return;}
+const uri=data.redirect_uri;
+let target;try{target=new URL(uri);}catch{status('Destino da solicitação inválido.');return;}
+if(target.protocol!=='https:'||!['chatgpt.com','chat.openai.com'].includes(target.hostname)){status('Este destino não é reconhecido como ChatGPT. Conexão bloqueada.');return;}
+const {data:members,error:memberError}=await client.from('clara_membros').select('empresa_id').eq('usuario_id',user.id).eq('ativo',true).eq('perfil','proprietario');
+if(memberError||!members?.length){status('Esta conta não possui acesso de proprietário ativo à memória.');return;}
+$('client').textContent=data.client?.name||data.client?.client_name||'Cliente ChatGPT';
+$('scope').textContent='Escopos solicitados: '+(data.scope||'acesso autorizado pelas permissões da sua conta');
+status('Confira e escolha se deseja conectar.');$('consent').hidden=false;
+}
+$('login').addEventListener('submit',async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{const {error}=await client.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('password').value='';if(error){status('Não foi possível entrar. Confira seu e-mail e senha.');return;}await prepare();}catch{status('Falha de conexão. Tente novamente.');}finally{button.disabled=false;}});
+for(const [button,method] of [['approve','approveAuthorization'],['deny','denyAuthorization']])$(button).addEventListener('click',async()=>{$('approve').disabled=$('deny').disabled=true;try{const {data,error}=await client.auth.oauth[method](id,{skipBrowserRedirect:true});if(error||!data?.redirect_url)throw Error();const target=new URL(data.redirect_url);if(target.protocol!=='https:'||!['chatgpt.com','chat.openai.com'].includes(target.hostname))throw Error();location.assign(target.href);}catch{status('Não foi possível concluir. Reinicie a conexão pelo ChatGPT.');$('approve').disabled=$('deny').disabled=false;}});
+prepare().catch(()=>status('Não foi possível iniciar a conexão. Tente novamente.'));
+</script></html>
