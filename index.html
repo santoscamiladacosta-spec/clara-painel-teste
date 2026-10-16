@@ -58,10 +58,20 @@ h1,h2,h3,h4,h5,h6,p,span,div,a,small,strong,b,em,i,ul,ol,li,svg text,
 #clara-equipe-panel th,#clara-equipe-panel td{padding:10px;border-bottom:1px solid #e3e6ec;font-size:13px}#clara-equipe-panel .team-msg{padding:10px 0;white-space:pre-wrap}
 #clara-equipe-panel .check-admin{display:flex;gap:8px;align-items:center}#clara-equipe-panel .check-admin input{width:auto}
 
+</style>
 <style id="clara-painel-sem-cabecalho">
 body.panel-mode #status,body.panel-mode #who,body.panel-mode #membership,body.panel-mode #logout,body.panel-mode #clara-equipe-bar,body.panel-mode #demo-warning,body.panel-mode #clara-equipe-panel{display:none!important}
 body.panel-mode #demo-frame{height:100vh;min-height:100vh;width:100%;border:0}
 body.panel-mode #demo-area{margin:0;padding:0}
+
+/* Login mantém seu layout; após autenticação, somente o painel fica visível. */
+body.panel-mode{margin:0!important;padding:0!important;display:block!important;overflow:hidden!important;background:#fff!important}
+body.panel-mode main.card{margin:0!important;padding:0!important;width:100%!important;max-width:none!important;height:100vh!important;min-height:100vh!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:transparent!important}
+body.panel-mode main.card > :not(#signed){display:none!important}
+body.panel-mode #signed{display:block!important;margin:0!important;padding:0!important;height:100vh!important;min-height:100vh!important}
+body.panel-mode #signed > :not(#demo-area){display:none!important}
+body.panel-mode #demo-area{display:block!important;margin:0!important;padding:0!important;width:100%!important;height:100vh!important}
+body.panel-mode #demo-frame{display:block!important;width:100%!important;height:100vh!important;min-height:100vh!important;border:0!important;margin:0!important;padding:0!important}
 </style></head><body><main class="card"><span class="brand">C</span><h1>Clara — Gerente de Operações</h1><p id="intro">Acesso reservado a usuários convidados.</p><div id="status" class="status" role="status">Verificando configuração...</div>
 <section id="login" class="hidden"><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="login-btn" type="submit">Entrar</button></form><button id="recover" class="secondary" type="button">Esqueci minha senha</button></section>
 <section id="setpass" class="hidden"><p>Defina sua senha de acesso.</p><form id="pass-form"><label for="new-password">Nova senha (mínimo 8 caracteres)</label><input id="new-password" type="password" autocomplete="new-password" required minlength="8"><button id="savepass" type="submit">Salvar senha</button></form></section>
