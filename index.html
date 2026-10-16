@@ -1,10 +1,58 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Clara | Acesso seguro</title>
-<style>:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#163353;background:#f2f5fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}body.panel-mode{display:block;padding:0;background:#f3f6fa}body.panel-mode .card{width:100%;max-width:none;padding:0;border:0;box-shadow:none;background:transparent}body.panel-mode .card>.brand,body.panel-mode .card>h1,body.panel-mode .card>#intro,body.panel-mode .card>small{display:none}body.panel-mode #signed{display:block}body.panel-mode #status{margin:0;border-radius:0}body.panel-mode #who,body.panel-mode #membership{margin:7px 20px}body.panel-mode #logout{width:auto;margin:7px 20px 12px}#demo-frame{display:block;width:100%;height:calc(100vh - 160px);min-height:650px;border:0}#demo-warning{padding:10px 20px;background:#fff4dc;color:#755214;font-weight:700}.card{background:white;border:1px solid #dde5f0;border-radius:22px;box-shadow:0 16px 45px #1736570d;width:min(100%,510px);padding:34px}.brand{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#193e6b;color:white;font-weight:800;font-size:26px}h1{font-size:27px;margin:18px 0 5px}p{color:#58718c;line-height:1.6}label{display:block;font-size:13px;font-weight:650;margin:16px 0 6px}input{width:100%;border:1px solid #c8d4e3;border-radius:10px;padding:12px;font:inherit}button{border:0;background:#193e6b;color:white;padding:12px 16px;border-radius:10px;cursor:pointer;font-weight:650;margin-top:18px;width:100%}button.secondary{background:#e9eff7;color:#193e6b;margin-top:9px}button:disabled{opacity:.55;cursor:wait}.status{padding:12px;background:#eef3fa;border-radius:10px;margin-top:15px;white-space:pre-wrap;font-size:14px}.warn{background:#fff4e8;color:#764315}.hidden{display:none}small{display:block;color:#71849a;margin-top:20px}</style>
+<style>:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#163353;background:#f2f5fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}body.panel-mode{display:block;padding:0;background:#f3f6fa}body.panel-mode .card{width:100%;max-width:none;padding:0;border:0;box-shadow:none;background:transparent}body.panel-mode .card>.brand,body.panel-mode .card>h1,body.panel-mode .card>#intro,body.panel-mode .card>small{display:none}body.panel-mode #signed{display:block}body.panel-mode #status{margin:0;border-radius:0}body.panel-mode #who,body.panel-mode #membership{margin:7px 20px}body.panel-mode #logout{width:auto;margin:7px 20px 12px}#demo-frame{display:block;width:100%;height:calc(100vh - 160px);min-height:650px;border:0}#demo-warning{padding:10px 20px;background:#fff4dc;color:#755214;font-weight:700}.card{background:white;border:1px solid #dde5f0;border-radius:22px;box-shadow:0 16px 45px #1736570d;width:min(100%,510px);padding:34px}.brand{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#193e6b;color:white;font-weight:800;font-size:26px}h1{font-size:27px;margin:18px 0 5px}p{color:#58718c;line-height:1.6}label{display:block;font-size:13px;font-weight:650;margin:16px 0 6px}input{width:100%;border:1px solid #c8d4e3;border-radius:10px;padding:12px;font:inherit}button{border:0;background:#193e6b;color:white;padding:12px 16px;border-radius:10px;cursor:pointer;font-weight:650;margin-top:18px;width:100%}button.secondary{background:#e9eff7;color:#193e6b;margin-top:9px}button:disabled{opacity:.55;cursor:wait}.status{padding:12px;background:#eef3fa;border-radius:10px;margin-top:15px;white-space:pre-wrap;font-size:14px}.warn{background:#fff4e8;color:#764315}.hidden{display:none}small{display:block;color:#71849a;margin-top:20px}
+
+/* Clara | identidade premium de acesso; fluxos JS preservados */
+:root{font-family:Inter,'Segoe UI',Arial,sans-serif;color:#182d46;background:#f4f5f6}
+body:not(.panel-mode){background:radial-gradient(circle at 10% 8%,#e3e7ec 0,transparent 37%),radial-gradient(circle at 95% 100%,#e9e2d8 0,transparent 32%),#f6f7f8}
+body:not(.panel-mode) .card{width:min(100%,530px);padding:43px;border-radius:24px;border:1px solid #e7e6e3;box-shadow:0 24px 75px #142a4119;background:#fffdfb}
+.brand{background:linear-gradient(145deg,#142741,#314a67);color:#d9bd91;border-radius:15px;box-shadow:0 8px 25px #11294220}
+h1{color:#142a44;letter-spacing:-.7px;font-size:28px}p{color:#68788a}label{color:#2e4157}
+input{border-radius:12px;border:1px solid #d8dce2;background:#fff;padding:14px}
+input:focus-visible,button:focus-visible{outline:3px solid #d0ad78;outline-offset:2px}
+button{background:#172e4a;border-radius:12px;padding:14px}button.secondary{background:#f0eee9;color:#253e59}
+.status{background:#f3f5f7;border:1px solid #e8ebee;color:#455970}
+body.panel-mode{background:#f5f6f8}
+</style>
+
+<style id="clara-login-visual-referencia-decola">
+:root{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;color:#202733;background:#F3F4F6}
+html,body,input,button{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important}
+body{background:linear-gradient(135deg,#f5f2ec,#f3f4f6 60%,#eaf0f8)}
+body.panel-mode{background:#f3f4f6}
+.card{border:1px solid #d8dce2;border-top:4px solid #C8A23A;border-radius:12px;box-shadow:0 14px 38px rgba(16,36,71,.10)}
+.brand{background:#102447;border-radius:10px;color:#C8A23A}
+h1{color:#102447}
+p{color:#66707C}
+input{border-color:#D8DCE2;border-radius:8px;background:#fff}
+button{background:#102447;border-radius:8px}
+button:hover{background:#16305e}
+button:focus-visible,input:focus-visible{outline:2px solid #C8A23A;outline-offset:2px}
+#demo-warning{background:#fff4d8;color:#765b21}
+</style>
+
+<style id="clara-tipografia-checklist-oficial">
+/* Tipografia do HTML Checklist Pré-Decolagem: mesma pilha e herança em todos os elementos. */
+html,body{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;-webkit-font-smoothing:antialiased;}
+body *,body *::before,body *::after{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;}
+button,input,textarea,select,option{font-family:inherit!important;}
+</style>
+
+<style id="clara-tipografia-integral-checklist-v4">
+/* Mesma pilha tipográfica do Checklist Pré-Decolagem, em todos os elementos e estados. */
+:root { --clara-font-checklist: "Segoe UI", Aptos, Arial, Helvetica, sans-serif; font-family:var(--clara-font-checklist)!important; }
+html,body,body *,body *::before,body *::after,
+button,input,select,textarea,option,optgroup,label,table,thead,tbody,tfoot,tr,td,th,
+h1,h2,h3,h4,h5,h6,p,span,div,a,small,strong,b,em,i,ul,ol,li,svg text,
+[role="dialog"],[role="button"],[contenteditable],.v3-print,.v3-print * {
+ font-family:var(--clara-font-checklist)!important;
+}
+@media print { html,body,body *,body *::before,body *::after,.v3-print,.v3-print * {font-family:var(--clara-font-checklist)!important;} }
+</style>
 </head><body><main class="card"><span class="brand">C</span><h1>Clara — Gerente de Operações</h1><p id="intro">Acesso reservado a usuários convidados.</p><div id="status" class="status" role="status">Verificando configuração...</div>
 <section id="login" class="hidden"><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="login-btn" type="submit">Entrar</button></form><button id="recover" class="secondary" type="button">Esqueci minha senha</button></section>
 <section id="setpass" class="hidden"><p>Defina sua senha de acesso.</p><form id="pass-form"><label for="new-password">Nova senha (mínimo 8 caracteres)</label><input id="new-password" type="password" autocomplete="new-password" required minlength="8"><button id="savepass" type="submit">Salvar senha</button></form></section>
-<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button><div id="demo-area" class="hidden"><div id="demo-warning">PRÉVIA VISUAL — dados fictícios. As alterações neste painel não são salvas no Supabase.</div><iframe id="demo-frame" title="Painel Premium Clara — demonstração" loading="lazy"></iframe></div></section>
+<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button><div id="demo-area" class="hidden"><div id="demo-warning">PRÉVIA VISUAL — dados de demonstração. As alterações neste painel não são salvas no Supabase.</div><iframe id="demo-frame" title="Painel Premium Clara — demonstração" loading="lazy"></iframe></div></section>
 <small>Ambiente piloto. Nenhum dado real de cliente é incorporado a esta página.</small></main>
 <script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (async()=>{
@@ -23,24 +71,10 @@ async function refresh(){const {data,error}=await client.auth.getSession();if(er
 const session=data.session;if(!session){show('login');if(!err)msg('Entre com seu e-mail e senha.');return}
 if(recovery){show('setpass');msg('Crie uma nova senha para concluir a recuperação.');return}
 show('signed');$('who').textContent='Conectada como '+session.user.email;
-const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,permissoes,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
+const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
 if(memberErr){$('membership').textContent='Não foi possível validar sua autorização. O painel permanecerá bloqueado.';msg('Acesso aos dados bloqueado até validar as permissões.',true);return}
 if(!members?.length){$('membership').textContent='Sua conta existe, mas ainda não foi vinculada a uma empresa pela administradora.';msg('Aguardando autorização da administradora.');return}
-if(members.length!==1){$('membership').textContent='Acesso bloqueado: vínculo ambíguo. Contate o suporte.';msg('Não foi possível identificar uma única empresa para esta conta.',true);return}
-const member=members[0];
-const allowedTabs=['hoje','empresa','processos','indicadores','acoes','manual','diario','notificacoes','clara'];
-const owner=member.perfil==='proprietario';
-const role=['proprietario','gestor','funcionario'].includes(member.perfil)?member.perfil:'sem_acesso';
-const permitted=owner?allowedTabs:Object.keys(member.permissoes||{}).filter(k=>allowedTabs.includes(k)&&member.permissoes[k]===true);
-const convitesHabilitados=owner&&c.habilitarConvites===true;
-$('membership').textContent='Vínculo validado: '+(member.clara_empresas?.nome||'Empresa')+' — '+role+'.';
-msg('Login confirmado. Permissões carregadas. Conteúdo operacional ainda demonstrativo.');
-$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');
-const permissionMessage={tipo:'CLARA_DEMO_ROLE',perfil:role,permissoes:permitted,convitesHabilitados};
-const frame=$('demo-frame');
-frame.onload=()=>frame.contentWindow.postMessage(permissionMessage,location.origin);
-if(!frame.getAttribute('src'))frame.src='./painel-demonstracao.html';
-else if(frame.contentDocument?.readyState==='complete')frame.contentWindow.postMessage(permissionMessage,location.origin);
+$('membership').textContent='Vínculo validado: '+members.map(m=>(m.clara_empresas?.nome||'Empresa')+' — '+m.perfil).join('; ')+'.';msg('Login confirmado. Prévia visual do painel liberada (dados fictícios).');$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');if(!$('demo-frame').getAttribute('src'))$('demo-frame').src='./painel-clara-v3.html';const role=members.some(m=>m.perfil==='proprietario')?'proprietario':'outro';const convitesHabilitados=role==='proprietario'&&c.habilitarConvites===true;$('demo-frame').onload=()=>{$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin)};if($('demo-frame').contentDocument?.readyState==='complete')$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DEMO_ROLE',perfil:role,convitesHabilitados},location.origin);
 }
 window.addEventListener('message',async event=>{
  if(event.origin!==location.origin||event.source!==$('demo-frame').contentWindow||event.data?.tipo!=='CLARA_INVITE_REQUEST')return;
