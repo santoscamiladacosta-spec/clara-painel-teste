@@ -18,7 +18,7 @@ As tabelas anteriores tinham 1 empresa, 1 vínculo e 0 registros operacionais/de
 
 ## Testes executados
 
-- 16 testes Node: hidratação, isolamento dos módulos, permissões, recuperação de dados, fila de gravação, falhas, validação de JSON, proteção da Edge Function e conteúdo completo dos relatórios.
+- 19 testes Node: hidratação, isolamento dos módulos, permissões, recuperação de dados, fila de gravação, falhas, validação de JSON, proteção da Edge Function e conteúdo completo dos relatórios.
 - PostgreSQL isolado (PGlite), com as funções auxiliares de segurança inspecionadas no projeto: migrações, RLS, isolamento entre empresas, permissões por ação, remoção e readmissão, concorrência, auditoria, importação atômica, repetição, datas inválidas e regressão da memória.
 - Chrome local com backend simulado: oito abas, criação e recuperação de compromisso, login, administração de equipe, solicitação de recuperação de senha, remontagem dos controles e logout.
 - Relatórios: quatro tipos renderizados em A4 com dados exclusivamente sintéticos de homologação; preservação de 120 análises verificada em teste de conteúdo. Esses PDFs não são entregáveis de cliente.
@@ -30,11 +30,13 @@ Os testes do PostgreSQL isolado não equivalem a um teste completo com JWT real 
 
 `clara-reports.js` produz HTML paginado para salvar como PDF pelo diálogo de impressão do navegador. Meu Momento permite selecionar as abas; Manual Vivo usa processos aprovados; Playbook usa análises selecionadas; Histórico usa todas as análises e registros disponíveis. Não há cortes `slice` para reduzir o conteúdo dos documentos.
 
-Foram encontrados os modelos de Meu Momento e Histórico de Análises. Os arquivos `02_MANUAL_VIVO_PREMIUM_CORRIGIDO.pdf` e `03_PLAYBOOK_PREMIUM_CORRIGIDO.pdf` ainda precisam ser fornecidos para conferir a composição aprovada. A implementação atual desses dois layouts é candidata, sem aprovação visual final.
+Os quatro modelos oficiais foram recebidos e inspecionados em 18/10/2026, incluindo Manual Vivo e Playbook do pacote CLARA_MODELOS_CORRIGIDOS.zip. O gerador foi ajustado para fichas de processo, linha do tempo, cartões de detalhes, calendário, histórico completo, gráfico de registros datados e identificação de captura. Textos ilustrativos dos modelos não entram nos dados do cliente. A composição usa cores e hierarquia das referências; a fonte do navegador é Arial, enquanto as referências usam DejaVu Sans, portanto não se declara reprodução tipográfica exata. A homologação visual humana permanece pendente.
+
+Também foi corrigido o resumo do Meu Momento: contagens e atividade respeitam as abas selecionadas e autorizadas. Situações, decisões e aprendizados ausentes não são inventados. Campos adicionais e etapas em objetos são preservados no detalhamento.
 
 ## Pendências que impedem a publicação definitiva
 
-1. Receber e comparar os modelos de Manual Vivo e Playbook. Conferir também a correspondência final dos dois modelos disponíveis; a identidade visual está aplicada, mas não foi declarada reprodução integral.
+1. Homologar visualmente a composição candidata dos quatro PDFs, agora comparada às referências fornecidas. A quantidade de páginas acompanha os dados; não é limitada à quantidade de páginas dos modelos.
 2. Homologar login, convite recebido por e-mail, definição de senha, recuperação, remoção, readmissão e restrições com contas reais de proprietário, gestor e colaborador em ambiente autorizado.
 3. Homologar leitura e gravação no Supabase com sessão real, incluindo duas empresas e dois dispositivos. As verificações atuais de isolamento e concorrência foram feitas em PostgreSQL isolado.
 4. Conferir dados reais de operação: o banco inspecionado não tinha registros operacionais ou memória. Não há documento real completo de cliente que possa ser conferido como PDF final.
@@ -57,3 +59,4 @@ Os testes de banco usam uma instância local descartável. Não apontar esse run
 ## Publicação e retorno
 
 Preservar `config.js`. Manter a URL de retorno autorizada no Supabase. Antes de promover a branch, registrar o SHA atual de `main` como versão de retorno e confirmar que os testes passaram. Não reaplicar migrações manualmente se já constarem do histórico do projeto. Em caso de problema de interface, restaurar o commit anterior do site; preservar as tabelas e a auditoria V9.
+

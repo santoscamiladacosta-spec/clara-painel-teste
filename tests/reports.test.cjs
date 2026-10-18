@@ -11,3 +11,24 @@ test('report export obeys selected tabs and rejects unauthorized history',()=>{
  const s=fixture(),member={ativo:true,perfil:'funcionario',permissoes:{rotinas:{ver:true}}};
  assert.throws(()=>build('historico',s,{member}));const html=build('momento',s,{member,tabs:['rotinas']});assert(html.includes('Compromisso'));assert(!html.includes('Conteúdo 119'));assert(!html.includes('Procedimento completo'));
 });
+test('selected routine export does not disclose counts from other modules',()=>{
+ const s=fixture();s.pilot.running={secret:true};s.v3.propostasProcessos=[{status:'pendente'}];
+ const html=build('momento',s,{tabs:['rotinas']});
+ for(const hidden of ['PROCESSOS OFICIAIS','INDICADORES<strong>','Oportunidades em curso','Propostas pendentes'])assert(!html.includes(hidden));
+ assert(html.includes('Calendário e prazos'));
+});
+test('approved models retain extra fields, object steps and explicitly recorded decisions',()=>{
+ const s=fixture();s.data.entidades.processos[0].passos_conhecidos=[{titulo:'Etapa detalhada',descricao:'Texto completo da etapa',criterio:'Critério específico'}];
+ s.data.entidades.processos[0].campo_adicional='Controle adicional integral';
+ const manual=build('manual',s);for(const text of ['FICHA DE PROCESSO','Texto completo da etapa','Critério específico','Controle adicional integral'])assert(manual.includes(text));
+ s.v3.claraHistory[0].decisoes=['Decisão documentada'];s.v3.claraHistory[0].aprendizados=['Aprendizado documentado'];
+ const playbook=build('playbook',s);for(const text of ['Linha do tempo','Registro detalhado','Decisão documentada','Aprendizado documentado'])assert(playbook.includes(text));
+ s.v3.claraHistory[119].playbook=false;assert(!build('playbook',s).includes('Conteúdo 119'));
+ assert(build('historico',s).includes('Situação não informada'));
+});
+test('activity chart counts recorded events only within selected tabs and capture period',()=>{
+ const s=fixture();s.v3.claraTasks[0].data='2026-10-18';s.v3.claraTasks[0].historico=[{em:'2026-10-17T12:00:00Z',texto:'Evento registrado'}];
+ const html=build('momento',s,{tabs:['rotinas'],generatedAt:'2026-10-18T12:00:00Z'});
+ assert(html.includes('activity-chart'));assert(html.includes('<b>1</b>'));assert(!html.includes('<b>120</b>'));assert(!html.includes('Conteúdo 119'));
+ const empty=build('momento',s,{tabs:['rotinas'],generatedAt:'2026-11-18T12:00:00Z'});assert(empty.includes('Nenhuma atividade datada registrada'));
+});
