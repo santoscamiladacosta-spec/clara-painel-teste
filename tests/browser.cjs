@@ -25,7 +25,7 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  assert.equal(await reloaded.evaluate(()=>V3.claraTasks[0].titulo),'Compromisso persistente');console.log('PASS: task recovered from confirmed backend mock after iframe reload');
  await reloaded.evaluate(()=>go('HOJE'));await page.screenshot({path:path.resolve(__dirname,'../test-results/ui-home.png'),fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS: eight tabs rendered without JavaScript errors');
- const auth=await browser.newPage();const authErrors=[];auth.on('pageerror',e=>authErrors.push(e.message));auth.on('dialog',d=>d.accept(d.type()==='prompt'?'EXCLUIR':undefined));
+ const auth=await browser.newPage();const authErrors=[];auth.on('pageerror',e=>{authErrors.push(e.message);console.error('AUTH ERROR',e.message)});auth.on('dialog',d=>d.accept(d.type()==='prompt'?'EXCLUIR':undefined));
  await auth.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',route=>route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.resolve(__dirname,'fixtures/auth-mock.js'),'utf8')}));
  await auth.goto(url+'/index.html');await auth.locator('#email').fill('owner@test.invalid');await auth.locator('#password').fill('test-password');await auth.locator('#login-btn').click();
  await auth.waitForFunction(()=>window.CLARA_RUNTIME?.store&&document.getElementById('demo-frame').contentDocument?.querySelector('#nav button'));
@@ -34,11 +34,15 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  assert.equal(await panel.locator('#clara-equipe-tbody tr').count(),2);
  await panel.getByRole('button',{name:'Redefinir senha',exact:true}).click();await panel.waitForFunction(()=>document.getElementById('clara-equipe-msg').textContent.includes('Solicitação'));
  assert((await auth.evaluate(()=>window.__calls)).some(x=>x.acao==='solicitar_reset'));console.log('PASS: authenticated team management and password reset route');
- await Promise.all([auth.waitForEvent('framenavigated',{predicate:f=>f.url().includes('painel-demonstracao')}),auth.evaluate(()=>CLARA_RUNTIME.reload())]);panel=auth.frames().find(f=>f.url().includes('painel-demonstracao'));await panel.waitForFunction(()=>typeof go==='function'&&document.querySelector('#nav button'));await panel.evaluate(()=>go('CONFIGURAÇÕES'));await panel.waitForSelector('#clara-equipe-tbody button');
+ await auth.evaluate(()=>CLARA_RUNTIME.reload());
+ await auth.waitForFunction(()=>{try{return document.getElementById('demo-frame').contentWindow.eval('typeof claraRuntime!=="undefined" && claraRuntime===window.parent.CLARA_RUNTIME && typeof go==="function" && document.documentElement.style.visibility==="visible"');}catch{return false;}}).catch(async e=>{console.error('DIAGNOSTICS',authErrors,await auth.evaluate(()=>({src:document.getElementById('demo-frame').src,url:document.getElementById('demo-frame').contentWindow.location.href,ready:document.getElementById('demo-frame').contentDocument?.readyState,text:document.getElementById('demo-frame').contentDocument?.body?.innerText?.slice(0,500),status:document.getElementById('status').textContent,runtime:!!window.CLARA_RUNTIME})));throw e;});
+ panel=auth.frames().find(f=>f.url().includes('painel-demonstracao'));await panel.evaluate(()=>go('CONFIGURAÇÕES'));await panel.waitForSelector('#clara-equipe-tbody button');
  assert.deepEqual(authErrors,[]);console.log('PASS: team controls remount after refresh without detached DOM failures');
  await panel.locator('#clara-sair-sidebar').click();await auth.waitForFunction(()=>!window.CLARA_RUNTIME);assert.equal(await auth.locator('#demo-frame').getAttribute('src'),null);console.log('PASS: logout unloads company data');
  await browser.close();server.close();
 })().catch(e=>{console.error(e);server.close();process.exit(1);});
+
+
 
 
 
