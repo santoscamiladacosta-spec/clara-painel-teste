@@ -98,7 +98,7 @@ body.panel-mode #demo-frame{display:block!important;width:100%!important;height:
 <small>Ambiente piloto. Nenhum dado real de cliente é incorporado a esta página.</small></main>
 <script src="./clara-data.js"></script><script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (async()=>{
-const $=id=>document.getElementById(id)||document.getElementById('demo-frame')?.contentDocument?.getElementById(id)||teamPanel?.querySelector('[id="'+id+'"]'), sections=['login','setpass','signed'];let client;let activeEmpresa=null,canManageTeam=false,isOwner=false;
+const $=id=>document.getElementById(id)||document.getElementById('demo-frame')?.contentDocument?.getElementById(id)||(teamPanel?.id===id?teamPanel:teamPanel?.querySelector('[id="'+id+'"]')), sections=['login','setpass','signed'];let client;let activeEmpresa=null,canManageTeam=false,isOwner=false;
 function show(id){sections.forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id!=='signed'){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('clara-equipe-bar').classList.add('hidden');$('clara-equipe-panel').classList.add('hidden');$('demo-frame').removeAttribute('src')}}
 function msg(t,w=false){$('status').textContent=t;$('status').classList.toggle('warn',w)}
 const c=window.CLARA_CONFIG||{};
@@ -109,7 +109,7 @@ const url=new URL(location.href),hash=new URLSearchParams(location.hash.slice(1)
 const err=url.searchParams.get('error_description')||hash.get('error_description');
 if(err)msg('O link de acesso falhou ou expirou. Solicite um novo convite ou recuperação de senha. '+err,true);
 let recovery=hash.get('type')==='recovery'||url.searchParams.get('type')==='recovery';
-async function refresh(){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('demo-frame').removeAttribute('src');window.CLARA_RUNTIME=null;const {data,error}=await client.auth.getSession();if(error){msg('Erro de sessão: '+error.message,true);show('login');return}
+async function refresh(){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');const oldFrame=$('demo-frame'),freshFrame=oldFrame.cloneNode(false);freshFrame.removeAttribute('src');oldFrame.replaceWith(freshFrame);window.CLARA_RUNTIME=null;const {data,error}=await client.auth.getSession();if(error){msg('Erro de sessão: '+error.message,true);show('login');return}
 const session=data.session;if(!session){show('login');if(!err)msg('Entre com seu e-mail e senha.');return}
 if(recovery){show('setpass');msg('Crie uma nova senha para concluir a recuperação.');return}
 show('signed');$('who').textContent='Conectada como '+session.user.email;
