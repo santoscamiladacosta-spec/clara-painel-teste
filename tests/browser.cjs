@@ -48,6 +48,12 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  panel=auth.frames().find(f=>f.url().includes('painel-demonstracao'));await panel.evaluate(()=>go('CONFIGURAÇÕES'));await panel.waitForSelector('#clara-equipe-tbody button');
  assert.deepEqual(authErrors,[]);console.log('PASS: team controls remount after refresh without detached DOM failures');
  await auth.setViewportSize({width:700,height:900});assert.equal(await panel.locator('#clara-sair-header').isVisible(),true);await panel.locator('#clara-sair-header').click();await auth.waitForFunction(()=>!window.CLARA_RUNTIME);assert.equal(await auth.locator('#demo-frame').getAttribute('src'),null);await auth.waitForTimeout(100);assert.deepEqual(authErrors,[]);console.log('PASS: visible logout at narrow viewport unloads company data without asynchronous errors');
+ const invited=await browser.newPage();await invited.addInitScript(()=>window.__pendingInvitationFixture=true);const inviteDialogs=[];invited.on('dialog',async d=>{inviteDialogs.push(d.type());await d.dismiss()});
+ await invited.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',route=>route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.resolve(__dirname,'fixtures/auth-mock.js'),'utf8')}));
+ await invited.goto(url+'/index.html');assert.equal(await invited.locator('#clara-equipe-toggle').count(),0);await invited.locator('#email').fill('employee@test.invalid');await invited.locator('#password').fill('test-password');await invited.locator('#login-btn').click();
+ await invited.waitForFunction(()=>window.CLARA_RUNTIME?.member?.perfil==='funcionario');
+ const invitedPanel=invited.frames().find(f=>f.url().includes('painel-demonstracao'));await invitedPanel.waitForSelector('#nav button');assert.equal(await invitedPanel.locator('#nav button').count(),2);assert.deepEqual(inviteDialogs,[]);
+ assert((await invited.evaluate(()=>window.__calls)).some(x=>x.acao==='aceitar_readmissao'));console.log('PASS: invited user enters with granted permissions automatically, without admin reapproval or access-page team button');
  await browser.close();server.close();
 })().catch(e=>{console.error(e);server.close();process.exit(1);});
 

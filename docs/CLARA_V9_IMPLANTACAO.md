@@ -85,3 +85,9 @@ A Revisão 2 dos quatro modelos (Manual Vivo, Playbook, Meu Momento e Histórico
 - Isolamento com outras sessões/segunda empresa e memória entre conversas reais continuam pendentes. Aprovação visual dos quatro modelos permanece registrada e não autoriza publicação.
 
 Os dois convites temporários foram posteriormente autorizados no momento do envio e enviados. Auth confirmou invited_at em ambas as contas, com confirmação de e-mail, login e aceite ainda ausentes; recebimento e aceite dependem da usuária. A ação Sair também foi disponibilizada no cabeçalho para telas estreitas, nas quais o rodapé lateral ficava oculto. Os geradores visuais aprovados não foram alterados.
+
+## Entrada de convidados sem segunda aprovação
+
+Por solicitação da usuária, o convite emitido por administradora autorizada é suficiente para a vinculação após autenticação. A candidata conclui automaticamente os convites pendentes pelo RPC existente, que mantém conferência do destinatário, da autorização de quem convidou e das permissões concedidas. Não há nova aprovação administrativa nem confirmação manual de vínculo. Falhas de integração exibem erro de validação do convite, em vez de informar incorretamente que falta autorização da administradora.
+
+O botão Equipe e acessos foi removido da tela de acesso. A gestão de equipe permanece em Configurações, conforme permissões. O teste de navegador cobriu conta sem vínculo, convite válido, admissão automática com abas restritas e ausência de diálogo adicional; passou. Não houve alteração em tabelas, Edge Functions ou geradores de PDF nesta correção. O login real das contas temporárias na candidata ainda precisa ser concluído pela usuária.

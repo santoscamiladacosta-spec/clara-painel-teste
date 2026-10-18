@@ -62,8 +62,6 @@ h1,h2,h3,h4,h5,h6,p,span,div,a,small,strong,b,em,i,ul,ol,li,svg text,
 @media print { html,body,body *,body *::before,body *::after,.v3-print,.v3-print * {font-family:var(--clara-font-checklist)!important;} }
 </style>
 <style id="clara-equipe-style">
-#clara-equipe-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 20px;background:#f5f2ec;border-bottom:1px solid #d8dce2}
-#clara-equipe-bar button{width:auto;margin:0;padding:10px 15px;background:#102447;color:white}
 #clara-equipe-panel{margin:12px 20px 20px;padding:24px;background:white;border:1px solid #d9e0e7;border-radius:16px;color:#102447}
 #clara-equipe-panel h2{margin:0 0 10px}#clara-equipe-panel form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end}
 #clara-equipe-panel label{margin:0}#clara-equipe-panel button{width:auto;margin:0}#clara-equipe-panel table{width:100%;border-collapse:collapse;margin-top:15px;text-align:left}
@@ -72,7 +70,7 @@ h1,h2,h3,h4,h5,h6,p,span,div,a,small,strong,b,em,i,ul,ol,li,svg text,
 
 </style>
 <style id="clara-painel-sem-cabecalho">
-body.panel-mode #status,body.panel-mode #who,body.panel-mode #membership,body.panel-mode #logout,body.panel-mode #clara-equipe-bar,body.panel-mode #demo-warning,body.panel-mode #clara-equipe-panel{display:none!important}
+body.panel-mode #status,body.panel-mode #who,body.panel-mode #membership,body.panel-mode #logout,body.panel-mode #demo-warning,body.panel-mode #clara-equipe-panel{display:none!important}
 body.panel-mode #demo-frame{height:100vh;min-height:100vh;width:100%;border:0}
 body.panel-mode #demo-area{margin:0;padding:0}
 
@@ -87,7 +85,7 @@ body.panel-mode #demo-frame{display:block!important;width:100%!important;height:
 </style></head><body><main class="card"><span class="brand">C</span><h1>Clara — Gerente de Operações</h1><p id="intro">Acesso reservado a usuários convidados.</p><div id="status" class="status" role="status">Verificando configuração...</div>
 <section id="login" class="hidden"><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="login-btn" type="submit">Entrar</button></form><button id="recover" class="secondary" type="button">Esqueci minha senha</button></section>
 <section id="setpass" class="hidden"><p>Defina sua senha de acesso.</p><form id="pass-form"><label for="new-password">Nova senha (mínimo 8 caracteres)</label><input id="new-password" type="password" autocomplete="new-password" required minlength="8"><button id="savepass" type="submit">Salvar senha</button></form></section>
-<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button><div id="clara-equipe-bar" class="hidden"><button id="clara-equipe-toggle" type="button" aria-expanded="false">Equipe e acessos</button><span>Convites e permissões por empresa</span></div>
+<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button>
 <div id="clara-equipe-panel" class="hidden"><h2>Equipe e acessos</h2><p>Convide funcionários e defina quem pode administrar usuários. Somente proprietários podem conceder autorização administrativa.</p>
 <form id="clara-equipe-form"><label>Nome<input id="clara-equipe-nome" maxlength="120" required></label><label>E-mail<input id="clara-equipe-email" type="email" required></label>
 <label>Perfil<select id="clara-equipe-perfil"><option value="funcionario">Funcionário</option><option value="gestor">Gestor</option></select></label>
@@ -99,7 +97,7 @@ body.panel-mode #demo-frame{display:block!important;width:100%!important;height:
 <script src="./clara-data.js"></script><script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (async()=>{
 const $=id=>document.getElementById(id)||document.getElementById('demo-frame')?.contentDocument?.getElementById(id)||(teamPanel?.id===id?teamPanel:teamPanel?.querySelector('[id="'+id+'"]')), sections=['login','setpass','signed'];let client;let activeEmpresa=null,canManageTeam=false,isOwner=false;
-function show(id){sections.forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id!=='signed'){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('clara-equipe-bar').classList.add('hidden');$('clara-equipe-panel').classList.add('hidden');$('demo-frame').removeAttribute('src')}}
+function show(id){sections.forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id!=='signed'){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('clara-equipe-panel').classList.add('hidden');$('demo-frame').removeAttribute('src')}}
 function msg(t,w=false){$('status').textContent=t;$('status').classList.toggle('warn',w)}
 const c=window.CLARA_CONFIG||{};
 if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(c.supabaseUrl||'')||!c.supabasePublishableKey||c.supabasePublishableKey.startsWith('COLE_')){msg('Configuração pendente: preencha config.js com a URL do projeto e a chave publicável do Supabase.',true);return}
@@ -116,18 +114,21 @@ show('signed');$('who').textContent='Conectada como '+session.user.email;
 const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,permissoes,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
 if(memberErr){$('membership').textContent='Não foi possível validar sua autorização. O painel permanecerá bloqueado.';msg('Acesso aos dados bloqueado até validar as permissões.',true);return}
 {
-  // Readmissão: titular já autenticado precisa consentir antes de criar o vínculo.
+  // O convite administrativo já autoriza o vínculo; o destinatário autenticado conclui a entrada.
   const {data:pendingResponse,error:pendingError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'minhas_readmissoes',empresa_id:'00000000-0000-0000-0000-000000000000'}});
-  if(!pendingError&&pendingResponse?.pendentes?.length){
-   const pending=pendingResponse.pendentes[0];
-   if(window.confirm('A empresa "'+pending.nome+'" autorizou seu acesso à Clara. Deseja aceitar o vínculo com esta empresa?')){
+  if(pendingError||pendingResponse?.sucesso!==true){
+   if(!members?.length){$('membership').textContent='Não foi possível verificar seu convite.';msg('Tente entrar novamente. Se o problema continuar, peça o reenvio do convite.',true);return;}
+  }else if(pendingResponse.pendentes?.length){
+   let linked=false;
+   for(const pending of pendingResponse.pendentes){
     const {data:accepted,error:acceptError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'aceitar_readmissao',empresa_id:pending.empresa_id}});
-    if(!acceptError&&accepted?.sucesso){await refresh();return}
-    msg(accepted?.erro||'Não foi possível confirmar o acesso. Contate o administrador.',true);return;
+    if(!acceptError&&accepted?.sucesso){linked=true;continue;}
+    if(!members?.length){$('membership').textContent='Não foi possível concluir seu acesso.';msg(accepted?.erro||'Não foi possível concluir o convite. Tente novamente ou solicite um novo link.',true);return;}
    }
+   if(linked){await refresh();return;}
   }
 }
-if(!members?.length){$('membership').textContent='Sua conta existe, mas ainda não foi vinculada a uma empresa pela administradora.';msg('Aguardando autorização da administradora.');return}
+if(!members?.length){$('membership').textContent='Não encontramos um convite ativo para esta conta.';msg('Solicite um convite para acessar a empresa.');return;}
 
 const requested=new URL(location.href).searchParams.get('empresa');
 const selected=members.find(m=>m.empresa_id===requested)||members[0];
@@ -209,7 +210,6 @@ async function loadTeam(){if(!canManageTeam||!activeEmpresa)return;teamMsg('Carr
  del.onclick=async()=>{const email=m.email||m.nome||m.usuario_id;const ok=confirm('Excluir o acesso de '+email+' desta empresa?\n\nO histórico operacional será preservado. A conta global não será excluída.');if(!ok)return;const typed=prompt('Para confirmar, digite EXCLUIR:');if(typed!=='EXCLUIR')return;del.disabled=true;try{await teamAction({acao:'excluir',usuario_id:m.usuario_id});await loadTeam();teamMsg('Vínculo removido da empresa com sucesso.')}catch(e){teamMsg(e.message);del.disabled=false}};td.append(del)}tb.append(tr)}
  const directory=(data.membros||[]).filter(m=>m.ativo&&!m.removido).map(m=>({id:m.usuario_id,name:m.nome||m.email,active:true}));if(window.CLARA_RUNTIME)window.CLARA_RUNTIME.directory=directory;$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DIRECTORY',directory},location.origin);teamMsg('Equipe atualizada.');}catch(e){teamMsg('Não foi possível carregar a equipe: '+e.message)}
 }
-$('clara-equipe-toggle').onclick=async()=>{const panel=$('clara-equipe-panel');panel.classList.toggle('hidden');$('clara-equipe-toggle').setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));if(!panel.classList.contains('hidden'))await loadTeam()};
 $('clara-equipe-recarregar').onclick=loadTeam;
 $('clara-equipe-form').onsubmit=async e=>{e.preventDefault();const b=$('clara-equipe-enviar');b.disabled=true;teamMsg('Enviando convite...');try{
  const perfil=$('clara-equipe-perfil').value;const permissions=readPermissionMatrix('clara-permissions-new');
