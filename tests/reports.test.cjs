@@ -32,3 +32,15 @@ test('activity chart counts recorded events only within selected tabs and captur
  assert(html.includes('activity-chart'));assert(html.includes('<b>1</b>'));assert(!html.includes('<b>120</b>'));assert(!html.includes('Conteúdo 119'));
  const empty=build('momento',s,{tabs:['rotinas'],generatedAt:'2026-11-18T12:00:00Z'});assert(empty.includes('Nenhuma atividade datada registrada'));
 });
+test('analysis headings and first content share a pagination group',()=>{
+ for(const kind of ['playbook','historico']){
+  const html=build(kind,fixture());assert.equal((html.match(/class="analysis-lead"/g)||[]).length,120);
+  assert(html.includes('class="analysis-heading"'));assert(html.includes('.analysis-lead{break-inside:avoid'));
+ }
+});
+test('report field titles use Portuguese and preserve extra field values',()=>{
+ const s=fixture();s.v3.claraHistory[0].contexto='Contexto integral';s.v3.claraHistory[0].decisoes=['Decisão integral'];s.v3.claraHistory[0].aprendizados=['Aprendizado integral'];s.v3.claraHistory[0].unknown_technical_key='Valor adicional integral';
+ const html=build('historico',s);for(const text of ['Contexto','Decisões registradas','Aprendizados','Valor adicional integral','Informação complementar'])assert(html.includes(text));
+ assert(!html.includes('unknown_technical_key'));assert(!html.includes('<h3>decisoes</h3>'));
+ const momento=build('momento',s);for(const text of ['Meta confirmada','Histórico de medições','Diário de Bordo','Plano de ação'])assert(momento.includes(text));
+});

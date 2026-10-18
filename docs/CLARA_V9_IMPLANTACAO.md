@@ -18,7 +18,7 @@ As tabelas anteriores tinham 1 empresa, 1 vínculo e 0 registros operacionais/de
 
 ## Testes executados
 
-- 19 testes Node: hidratação, isolamento dos módulos, permissões, recuperação de dados, fila de gravação, falhas, validação de JSON, proteção da Edge Function e conteúdo completo dos relatórios.
+- 21 testes Node: hidratação, isolamento dos módulos, permissões, recuperação de dados, fila de gravação, falhas, validação de JSON, proteção da Edge Function e conteúdo completo dos relatórios.
 - PostgreSQL isolado (PGlite), com as funções auxiliares de segurança inspecionadas no projeto: migrações, RLS, isolamento entre empresas, permissões por ação, remoção e readmissão, concorrência, auditoria, importação atômica, repetição, datas inválidas e regressão da memória.
 - Chrome local com backend simulado: oito abas, criação e recuperação de compromisso, login, administração de equipe, solicitação de recuperação de senha, remontagem dos controles e logout.
 - Relatórios: quatro tipos renderizados em A4 com dados exclusivamente sintéticos de homologação; preservação de 120 análises verificada em teste de conteúdo. Esses PDFs não são entregáveis de cliente.
@@ -60,3 +60,13 @@ Os testes de banco usam uma instância local descartável. Não apontar esse run
 
 Preservar `config.js`. Manter a URL de retorno autorizada no Supabase. Antes de promover a branch, registrar o SHA atual de `main` como versão de retorno e confirmar que os testes passaram. Não reaplicar migrações manualmente se já constarem do histórico do projeto. Em caso de problema de interface, restaurar o commit anterior do site; preservar as tabelas e a auditoria V9.
 
+
+## Revisão visual dos PDFs — segunda geração
+
+A usuária aprovou a estrutura-base do Manual Vivo: composição, fichas e passo a passo preservados. As quatro páginas de homologação foram comparadas por renderização com a versão aprovada, sem diferenças visuais.
+
+Playbook e Histórico agora agrupam título, metadados e primeiro bloco de cada análise. A massa de 12 análises foi conferida por página, incluindo a última; teste adicional com 180 trechos e primeiro resumo maior que uma página manteve os marcadores finais e o primeiro texto junto ao cabeçalho.
+
+Meu Momento passou de 11 para 7 páginas com a mesma massa sintética: retirada de quebras obrigatórias entre módulos, disposição de campos em linhas e estados vazios compactos. Não houve exclusão de registros. Rótulos dos campos recebem títulos em português, com acentuação; campos adicionais sem nome editorial conhecido são identificados como informações complementares, mantendo os valores.
+
+21 testes Node passaram. Os quatro PDFs sintéticos foram gerados novamente para aprovação visual humana. Essa revisão não aprova as pendências reais de equipe, isolamento e memória, nem autoriza publicação.
