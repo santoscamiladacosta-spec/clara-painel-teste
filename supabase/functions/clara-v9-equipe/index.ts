@@ -2,12 +2,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.102.0';
 
 const site = Deno.env.get('CLARA_SITE_URL') || 'https://santoscamiladacosta-spec.github.io/clara-painel-teste/';
 const origin = new URL(site).origin;
-const cors = {'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'};
-const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});
+// Origem local exata da homologação autorizada; não aceita outros hosts ou portas.
+const homologationOrigin = 'http://127.0.0.1:8765';
+const allowedOrigins = new Set([origin,homologationOrigin]);
+const baseCors = {'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'};
 Deno.serve(async req=>{
+ const requestOrigin=req.headers.get('origin');
+ const cors={...baseCors,'Access-Control-Allow-Origin':requestOrigin&&allowedOrigins.has(requestOrigin)?requestOrigin:origin};
+ const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
  if(req.method!=='POST')return json({sucesso:false,erro:'Método inválido'},405);
- if(req.headers.has('origin')&&req.headers.get('origin')!==origin)return json({sucesso:false,erro:'Origem inválida'},403);
+ if(requestOrigin&&!allowedOrigins.has(requestOrigin))return json({sucesso:false,erro:'Origem inválida'},403);
  try{
   const auth=req.headers.get('authorization');if(!auth?.startsWith('Bearer '))return json({sucesso:false,erro:'Autenticação necessária'},401);
   const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_ANON_KEY')!;

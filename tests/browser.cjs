@@ -23,6 +23,12 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await page.evaluate(()=>CLARA_RUNTIME.reload());await page.waitForTimeout(500);
  const reloaded=page.frames().find(f=>f.url().includes('painel-demonstracao'));
  assert.equal(await reloaded.evaluate(()=>V3.claraTasks[0].titulo),'Compromisso persistente');console.log('PASS: task recovered from confirmed backend mock after iframe reload');
+ await reloaded.evaluate(()=>go('DIÁRIO DE BORDO'));
+ const chooserReady=page.waitForEvent('filechooser');await reloaded.getByRole('button',{name:'↑ Importar conversa da Clara',exact:true}).click();
+ const chooser=await chooserReady;await chooser.setFiles({name:'homologacao.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({formato:'CLARA_ATUALIZACAO',versao:'1.0',id:'browser-import-preview',empresa_nome:'Cliente de Teste',alteracoes:[{aba:'diario',acao:'adicionar_registro',titulo:'Prévia de teste',resumo:'Cancelar deve preservar o banco.'}]}))});
+ await reloaded.getByRole('heading',{name:'Prévia de importação',exact:true}).waitFor();
+ assert.equal(await reloaded.locator('input[type=file]').count(),0);await reloaded.getByRole('button',{name:'Fechar ✕',exact:true}).click();
+ assert.equal(await reloaded.evaluate(()=>V3.claraHistory.length),0);console.log('PASS: attached JSON file input opens preview, cleans up, and cancellation changes no records');
  await reloaded.evaluate(()=>go('HOJE'));await page.screenshot({path:path.resolve(__dirname,'../test-results/ui-home.png'),fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS: eight tabs rendered without JavaScript errors');
  const auth=await browser.newPage();const authErrors=[];auth.on('pageerror',e=>{authErrors.push(e.message);console.error('AUTH ERROR',e.message)});auth.on('dialog',d=>d.accept(d.type()==='prompt'?'EXCLUIR':undefined));

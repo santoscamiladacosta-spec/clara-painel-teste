@@ -70,3 +70,16 @@ Playbook e Histórico agora agrupam título, metadados e primeiro bloco de cada 
 Meu Momento passou de 11 para 7 páginas com a mesma massa sintética: retirada de quebras obrigatórias entre módulos, disposição de campos em linhas e estados vazios compactos. Não houve exclusão de registros. Rótulos dos campos recebem títulos em português, com acentuação; campos adicionais sem nome editorial conhecido são identificados como informações complementares, mantendo os valores.
 
 21 testes Node passaram. Os quatro PDFs sintéticos foram gerados novamente para aprovação visual humana. Essa revisão não aprova as pendências reais de equipe, isolamento e memória, nem autoriza publicação.
+
+## Homologação visual concluída pela usuária
+
+A Revisão 2 dos quatro modelos (Manual Vivo, Playbook, Meu Momento e Histórico de Análises) foi aprovada pela usuária com dados sintéticos. A composição atual dos geradores passa a ser o padrão oficial. Não realizar novas alterações visuais sem solicitação da usuária. Essa aprovação não autoriza merge/publicação e não substitui os testes funcionais reais de equipe, importação, memória e isolamento.
+
+## Homologação funcional retomada — 18/10/2026
+
+- Seletor de arquivo JSON corrigido sem alteração visual: input temporário é anexado ao documento, removido após seleção/cancelamento e coberto por teste de navegador.
+- Sessão proprietária real: prévia aberta, cancelamento com 0 importações no banco, aprovação de análise e tarefa, recuperação após recarga, bloqueio de repetição (Arquivo já importado), arquivo de outra empresa e ação inválida recusados. Consulta final: 1 importação, 1 análise e 2 tarefas totais (uma anterior e uma importada), sem duplicação.
+- Ajuste da origem exata http://127.0.0.1:8765 autorizado expressamente e aplicado à clara-v9-equipe. Versão 3 ACTIVE/JWT true; preflight 204 e listagem autenticada retornou Equipe atualizada. A tentativa de atualização v2 apresentou BOOT_ERROR; o empacotamento v3 corrigiu a falha antes de qualquer convite. Origem oficial, JWT, auth.getUser e permissões RPC preservados; outros hosts/portas continuam recusados nos testes.
+- 22 testes Node e o teste de navegador com backend simulado passaram. Funções originais e configuração publicada não foram alteradas.
+- Endereços temporários autorizados para homologação: coachcamilasantos@gmail.com (gestor) e empreendacomia.online@gmail.com (colaborador). Convites aguardam confirmação no momento do envio com permissões explícitas. Não declarar envio, recebimento, aceite ou acesso validado antes das respectivas evidências.
+- Isolamento com outras sessões/segunda empresa e memória entre conversas reais continuam pendentes. Aprovação visual dos quatro modelos permanece registrada e não autoriza publicação.
