@@ -16,7 +16,8 @@ function build(kind,snapshot,options={}){
  const s=snapshot,e=s.data.entidades,v=s.v3,p=s.pilot,company=s.data.empresa;
  const member=options.member;
  const allowed=area=>!member||dataContract.can(member,area,'ver');
- const people=Object.fromEntries(e.pessoas.map(x=>[x.id,x.nome_ou_funcao]));
+ const directory=options.directory||e.pessoas;
+ const people=Object.fromEntries(directory.map(x=>[x.id,x.nome_ou_funcao]));
  const chosen=(options.tabs||['hoje','processos','indicadores','rotinas','diario','crescimento']).filter(allowed);
  const stamp=options.generatedAt||new Date().toISOString();let body='';
  const indicators=[...e.indicadores,...v.indicators].map(i=>({...i,meta_confirmada:s.goals.goals[i.id]||null,medicoes:v.measurements[i.id]||[],arquivado:v.archivedIndicators.includes(i.id)}));
@@ -33,7 +34,7 @@ function build(kind,snapshot,options={}){
  }else{
   if(!chosen.length)throw Error('Selecione ao menos uma aba autorizada.');
   const date=stamp.slice(0,10),late=v.claraTasks.filter(t=>!t.ok&&t.data<date);
-  body=`<section><h2>01 / Visão geral do painel</h2><div class="stats"><div>EQUIPE<strong>${e.pessoas.length}</strong>pessoas cadastradas</div><div>PROCESSOS OFICIAIS<strong>${e.processos.length}</strong>Manual Vivo</div><div>INDICADORES<strong>${indicators.filter(x=>!x.arquivado).length}</strong>em acompanhamento</div></div><table><thead><tr><th>Sinal do painel</th><th>Quantidade</th></tr></thead><tbody><tr><td>Rotinas em atraso</td><td>${late.length}</td></tr><tr><td>Oportunidades em curso</td><td>${Object.values(p.running).filter(Boolean).length}</td></tr><tr><td>Propostas pendentes</td><td>${(v.propostasProcessos||[]).filter(x=>x.status==='pendente').length}</td></tr></tbody></table></section>`;
+  body=`<section><h2>01 / Visão geral do painel</h2><div class="stats"><div>EQUIPE<strong>${directory.length}</strong>pessoas disponíveis</div><div>PROCESSOS OFICIAIS<strong>${e.processos.length}</strong>Manual Vivo</div><div>INDICADORES<strong>${indicators.filter(x=>!x.arquivado).length}</strong>em acompanhamento</div></div><table><thead><tr><th>Sinal do painel</th><th>Quantidade</th></tr></thead><tbody><tr><td>Rotinas em atraso</td><td>${late.length}</td></tr><tr><td>Oportunidades em curso</td><td>${Object.values(p.running).filter(Boolean).length}</td></tr><tr><td>Propostas pendentes</td><td>${(v.propostasProcessos||[]).filter(x=>x.status==='pendente').length}</td></tr></tbody></table></section>`;
   if(chosen.includes('hoje'))body+=records('02 / Alertas e pendências operacionais',late,people);
   if(chosen.includes('processos'))body+=records('Processos aprovados',e.processos,people)+records('Processos em descoberta',v.processDrafts,people)+records('Propostas de processos',v.propostasProcessos,people)+records('Solicitações de alteração',v.processChanges,people);
   if(chosen.includes('indicadores'))body+=records('Indicadores e histórico de medições',indicators,people)+`<section><h2>Histórico de metas</h2>${detail(s.goals.history,people)}</section>`;

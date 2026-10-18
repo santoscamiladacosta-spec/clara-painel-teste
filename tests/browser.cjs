@@ -30,6 +30,9 @@ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http:
  await auth.goto(url+'/index.html');await auth.locator('#email').fill('owner@test.invalid');await auth.locator('#password').fill('test-password');await auth.locator('#login-btn').click();
  await auth.waitForFunction(()=>window.CLARA_RUNTIME?.store&&document.getElementById('demo-frame').contentDocument?.querySelector('#nav button'));
  let panel=auth.frames().find(f=>f.url().includes('painel-demonstracao'));await panel.waitForSelector('#nav button');
+ assert.equal(await panel.evaluate(()=>V3.users.length),2);
+ await panel.evaluate(()=>{go('INDICADORES');indicatorForm();});assert.equal(await panel.locator('#v3-modal [name=responsavel] option').count(),2);await panel.evaluate(()=>closeModal());
+ console.log('PASS: indicator responsibility uses the authenticated team directory');
  await panel.evaluate(()=>go('CONFIGURAÇÕES'));await panel.waitForSelector('#clara-equipe-tbody button');
  assert.equal(await panel.locator('#clara-equipe-tbody tr').count(),2);
  await panel.getByRole('button',{name:'Redefinir senha',exact:true}).click();await panel.waitForFunction(()=>document.getElementById('clara-equipe-msg').textContent.includes('Solicitação'));

@@ -1,6 +1,9 @@
 'use strict';
 CLARA_ACCESS={perfil:claraRuntime.member.perfil,permissoes:claraRuntime.member.permissoes,convitesHabilitados:claraRuntime.canManage};
 pilot.role=CLARA_ACCESS.perfil;
+function claraDirectory(list){V3.users=[...new Map([...claraRuntime.store.state.v3.users,...list].map(u=>[u.id,u])).values()].filter(u=>u.active!==false);}
+claraDirectory(claraRuntime.directory||[]);
+window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===window.parent&&event.data?.tipo==='CLARA_DIRECTORY'){claraDirectory(event.data.directory||[]);if(page!=='CONFIGURAÇÕES')render();}});
 const persistedPilotEvents=structuredClone(pilot.events);
 // Server audit records automatic pilot history with author and before/after data.
 // Do not require unrelated Diary permissions just to complete a routine.
@@ -12,6 +15,8 @@ v3CanApprove=()=>['proprietario','gestor'].includes(CLARA_ACCESS.perfil)&&ClaraD
 processSteps=p=>Array.isArray(p.passos_conhecidos)?p.passos_conhecidos:[];
 resetPilot=()=>toast('O histórico operacional é preservado.');
 saveUser=savePermissions=()=>toast('Use a gestão de equipe na aba Configurações.');
+const processFormWithDiagnosis=processNewForm;
+processNewForm=id=>{processFormWithDiagnosis(id);const select=document.querySelector('#v3-modal [name=responsible]');if(select)for(const person of V3.users)if(![...select.options].some(o=>o.value===person.id))select.add(new Option(person.name,person.id));};
 saveProcessChange=(e,id)=>{e.preventDefault();V3.processChanges.unshift({id:crypto.randomUUID(),processo_id:id,description:String(new FormData(e.target).get('text')||''),date:new Date().toISOString(),status:'Aguardando aprovação'});persistV3();closeModal();};
 claraPreviewImport=d=>{
  try{ClaraData.validateImport(d,D.empresa);}catch(e){toast(e.message);return;}
@@ -31,7 +36,7 @@ addOpp=addSuggestion;
 claraDownloadMoment=e=>{e.preventDefault();const f=new FormData(e.target),tabs=f.getAll('abas').map(p=>CLARA_PAGE_KEYS[p]).filter(a=>ClaraData.can(claraRuntime.member,a,'ver'));if(!tabs.length){toast('Selecione ao menos uma aba autorizada.');return;}if(claraRuntime.store.pending||claraRuntime.store.failed){toast('Aguarde a confirmação das alterações antes de exportar.');return;}const modules=ClaraData.split(claraSnapshot());claraDownload('CLARA_MEU_MOMENTO.json',{formato:'CLARA_MOMENTO',versao:'1.0',empresa_id:D.empresa.id,empresa_nome:D.empresa.nome,gerado_em:new Date().toISOString(),destinatario:f.get('destino'),abas_selecionadas:tabs,dados:Object.fromEntries(tabs.map(a=>[a,modules[a]]))});closeModal();};
 async function claraOpenReport(kind,options={}){
  if(claraRuntime.store.pending||claraRuntime.store.failed){toast('Aguarde a confirmação das alterações antes de exportar.');return;}
- try{const html=ClaraReports.build(kind,claraSnapshot(),{...options,member:claraRuntime.member});const popup=window.open('','_blank');if(!popup){toast('Permita a abertura do relatório no navegador.');return;}popup.opener=null;popup.document.open();popup.document.write(html);popup.document.close();}
+ try{const html=ClaraReports.build(kind,claraSnapshot(),{...options,directory:V3.users.map(u=>({id:u.id,nome_ou_funcao:u.name})),member:claraRuntime.member});const popup=window.open('','_blank');if(!popup){toast('Permita a abertura do relatório no navegador.');return;}popup.opener=null;popup.document.open();popup.document.write(html);popup.document.close();}
  catch(error){toast(error.message);}
 }
 claraPrintDocument=kind=>{
@@ -56,7 +61,7 @@ render=()=>{
   const opportunities=[...E.oportunidades,...pilot.suggestions];
   const focus=opportunities.filter(o=>pilot.running[o.id]);
   content.innerHTML=title('Sua operação hoje','Sua operação em um só lugar: o que aconteceu, o que está em andamento e onde agir.')+late+
-  `<div class="grid four">${stat('Equipe',E.pessoas.length+' pessoas','Cadastro da operação')}${stat('Processos oficiais',E.processos.length,'Manual Vivo')}${stat('Indicadores',indicators.length,'Em acompanhamento')}${stat('Oportunidades em curso',focus.length,'Planos em execução')}</div>
+  `<div class="grid four">${stat('Equipe',V3.users.length+' pessoas','Pessoas disponíveis para sua operação')}${stat('Processos oficiais',E.processos.length,'Manual Vivo')}${stat('Indicadores',indicators.length,'Em acompanhamento')}${stat('Oportunidades em curso',focus.length,'Planos em execução')}</div>
   <div class="grid two" style="margin-top:17px">${card(`<div class="flex"><h2>Visão de resultados</h2><button class="btn light" onclick="go('INDICADORES')">Ver painel →</button></div><div class="rings">${selected.map(i=>`<div class="ring"><div><strong style="font-size:15px">${esc(fmtMetric(i,indicatorValue(i)))}</strong><small>${esc(i.nome)}</small></div></div>`).join('')||'<p class="hint">Sem indicadores registrados.</p>'}</div>`)}
   ${card(`<div class="flex"><h2>Em foco</h2>${tag('Gestão ativa','ok')}</div><div class="stack">${focus.map(o=>`<div class="item"><strong>${esc(o.titulo)}</strong><p>${esc(o.descricao||'')}</p><button class="btn light" onclick="go('CRESCIMENTO')">Abrir plano →</button></div>`).join('')||'<p class="hint">Nenhuma oportunidade priorizada.</p>'}</div>`)}</div>
   <div class="grid two" style="margin-top:17px">${card(`<h2>Rotinas da equipe</h2>${E.rotinas_rascunho.map(r=>`<div class="item"><strong>${esc(r.titulo)}</strong><p>${esc(nameOf(r.responsavel_pessoa_id))} · ${pilot.done[r.id]?'Feito':'Em aberto'}</p></div>`).join('')||'<p class="hint">Nenhuma rotina cadastrada.</p>'}<button class="btn light" onclick="go('ROTINAS')">Abrir rotinas →</button>`)}
@@ -91,3 +96,4 @@ document.addEventListener('click',e=>{
 },true);
 render();
 document.documentElement.style.visibility='visible';
+

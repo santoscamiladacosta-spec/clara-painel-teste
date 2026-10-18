@@ -136,7 +136,9 @@ canManageTeam=isOwner||(selected.perfil==='gestor'&&selected.permissoes?.adminis
 const {data:rows,error:loadError}=await client.from('clara_v9_modulos').select('area,conteudo,revisao').eq('empresa_id',activeEmpresa);
 if(loadError){msg('Não foi possível carregar os dados operacionais. '+loadError.message,true);return;}
 const company={id:activeEmpresa,nome:selected.clara_empresas.nome};
-window.CLARA_RUNTIME={member:selected,canManage:canManageTeam,store:new ClaraData.Store(client,company,selected,rows),reload:refresh};
+let directory=[{id:session.user.id,name:session.user.user_metadata?.nome||session.user.user_metadata?.name||session.user.email,active:true}];
+if(canManageTeam){const {data:teamData,error:teamError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'listar',empresa_id:activeEmpresa}});if(!teamError&&teamData?.sucesso)directory=(teamData.membros||[]).filter(m=>m.ativo&&!m.removido).map(m=>({id:m.usuario_id,name:m.nome||m.email,active:true}));}
+window.CLARA_RUNTIME={member:selected,canManage:canManageTeam,directory,store:new ClaraData.Store(client,company,selected,rows),reload:refresh};
 $('membership').textContent='Empresa: '+company.nome;
 if(members.length>1){const picker=document.createElement('select');picker.setAttribute('aria-label','Empresa ativa');for(const m of members){const option=new Option(m.clara_empresas.nome,m.empresa_id);option.selected=m.empresa_id===activeEmpresa;picker.add(option);}picker.onchange=()=>{const next=new URL(location.href);next.searchParams.set('empresa',picker.value);location.assign(next);};$('membership').append(picker);}
 $('clara-equipe-admin').disabled=!isOwner;
@@ -205,7 +207,7 @@ async function loadTeam(){if(!canManageTeam||!activeEmpresa)return;teamMsg('Carr
  const del=document.createElement('button');del.type='button';del.textContent='Excluir';del.style.cssText='width:auto;margin:0 0 0 8px;padding:7px 10px;background:#a62828;color:#fff';
  if(!isOwner&&(m.perfil==='gestor'||m.permissoes?.administrar_usuarios))del.disabled=true;
  del.onclick=async()=>{const email=m.email||m.nome||m.usuario_id;const ok=confirm('Excluir o acesso de '+email+' desta empresa?\n\nO histórico operacional será preservado. A conta global não será excluída.');if(!ok)return;const typed=prompt('Para confirmar, digite EXCLUIR:');if(typed!=='EXCLUIR')return;del.disabled=true;try{await teamAction({acao:'excluir',usuario_id:m.usuario_id});await loadTeam();teamMsg('Vínculo removido da empresa com sucesso.')}catch(e){teamMsg(e.message);del.disabled=false}};td.append(del)}tb.append(tr)}
- teamMsg('Equipe atualizada.');}catch(e){teamMsg('Não foi possível carregar a equipe: '+e.message)}
+ const directory=(data.membros||[]).filter(m=>m.ativo&&!m.removido).map(m=>({id:m.usuario_id,name:m.nome||m.email,active:true}));if(window.CLARA_RUNTIME)window.CLARA_RUNTIME.directory=directory;$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DIRECTORY',directory},location.origin);teamMsg('Equipe atualizada.');}catch(e){teamMsg('Não foi possível carregar a equipe: '+e.message)}
 }
 $('clara-equipe-toggle').onclick=async()=>{const panel=$('clara-equipe-panel');panel.classList.toggle('hidden');$('clara-equipe-toggle').setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));if(!panel.classList.contains('hidden'))await loadTeam()};
 $('clara-equipe-recarregar').onclick=loadTeam;
