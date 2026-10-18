@@ -95,5 +95,8 @@ document.addEventListener('click',e=>{
  if(claraRuntime.store.failed){e.preventDefault();e.stopImmediatePropagation();return;}
 },true);
 render();
+document.title='Painel Clara V9 — '+D.empresa.nome;
+const claraFooter=document.querySelector('.footnote');if(claraFooter)claraFooter.textContent='Clara / '+D.empresa.nome;
 document.documentElement.style.visibility='visible';
+
 
