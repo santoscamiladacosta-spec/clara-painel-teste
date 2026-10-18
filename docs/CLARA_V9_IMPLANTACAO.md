@@ -83,3 +83,5 @@ A Revisão 2 dos quatro modelos (Manual Vivo, Playbook, Meu Momento e Histórico
 - 22 testes Node e o teste de navegador com backend simulado passaram. Funções originais e configuração publicada não foram alteradas.
 - Endereços temporários autorizados para homologação: coachcamilasantos@gmail.com (gestor) e empreendacomia.online@gmail.com (colaborador). Convites aguardam confirmação no momento do envio com permissões explícitas. Não declarar envio, recebimento, aceite ou acesso validado antes das respectivas evidências.
 - Isolamento com outras sessões/segunda empresa e memória entre conversas reais continuam pendentes. Aprovação visual dos quatro modelos permanece registrada e não autoriza publicação.
+
+Os dois convites temporários foram posteriormente autorizados no momento do envio e enviados. Auth confirmou invited_at em ambas as contas, com confirmação de e-mail, login e aceite ainda ausentes; recebimento e aceite dependem da usuária. A ação Sair também foi disponibilizada no cabeçalho para telas estreitas, nas quais o rodapé lateral ficava oculto. Os geradores visuais aprovados não foram alterados.

@@ -97,6 +97,8 @@ document.addEventListener('click',e=>{
 render();
 document.title='Painel Clara V9 — '+D.empresa.nome;
 const claraFooter=document.querySelector('.footnote');if(claraFooter)claraFooter.textContent='Clara / '+D.empresa.nome;
+const claraHeaderActions=document.querySelector('.top .right');
+if(claraHeaderActions&&!document.getElementById('clara-sair-header')){const button=document.createElement('button');button.id='clara-sair-header';button.type='button';button.className='btn light';button.textContent='Sair';button.setAttribute('aria-label','Sair da conta');button.onclick=()=>window.parent.postMessage({tipo:'CLARA_LOGOUT'},location.origin);claraHeaderActions.append(button);}
 document.documentElement.style.visibility='visible';
 
 
