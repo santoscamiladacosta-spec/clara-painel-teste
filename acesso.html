@@ -54,6 +54,14 @@ small{color:var(--suave)}
     <button type="submit">Salvar senha</button>
   </form>
 
+  <section id="s-conta" hidden>
+    <div class="caixa"><p style="margin:0">Você está entrando como <b id="conta-atual"></b>.</p></div>
+    <div class="lado">
+      <button class="sec" id="b-trocar" type="button">Usar outra conta</button>
+      <button id="b-continuar" type="button">Continuar</button>
+    </div>
+  </section>
+
   <section id="s-consentir" hidden>
     <div class="caixa">
       <p style="margin-top:0"><b id="cliente">Aplicativo</b> quer conectar a Clara à sua conta <b id="quem"></b>.</p>
@@ -87,13 +95,14 @@ const CLARA = {
   chavePublica: 'sb_publishable_C5QQEoKHTKtCUL7gUAaq8w_Wsqz6en8'
 };
 const $ = id => document.getElementById(id);
-const mostrar = (...ids) => ['f-login','f-senha','s-consentir','s-pronto'].forEach(i => $(i).hidden = !ids.includes(i));
+const mostrar = (...ids) => ['f-login','f-senha','s-conta','s-consentir','s-pronto'].forEach(i => $(i).hidden = !ids.includes(i));
 const msg = (t, tipo='') => { $('msg').textContent = t; $('msg').className = tipo; };
 const params = new URLSearchParams(location.search);
 const hash = new URLSearchParams(location.hash.slice(1));
 const authorizationId = params.get('authorization_id');
 const tipoLink = hash.get('type');                 // invite | recovery | signup | magiclink
 const erroLink = hash.get('error_description');
+let contaEscolhida = false;
 const sb = supabase.createClient(CLARA.url, CLARA.chavePublica, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'implicit' } });
 
 function traduzir(e){
@@ -136,6 +145,10 @@ async function pronto(){
 async function seguir(){
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { $('titulo').textContent = authorizationId ? 'Conectar a Clara' : 'Acesso à Clara'; $('sub').textContent = 'Entre com o e-mail cadastrado pela sua empresa.'; mostrar('f-login'); return; }
+  if (authorizationId && !contaEscolhida) {
+    $('titulo').textContent = 'Conectar a Clara'; $('sub').textContent = 'Confirme com qual conta deseja conectar.';
+    $('conta-atual').textContent = session.user.email; mostrar('s-conta'); return;
+  }
   if (authorizationId) return consentimento();
   return pronto();
 }
@@ -145,7 +158,7 @@ $('f-login').addEventListener('submit', async e => {
   const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('senha').value });
   $('senha').value = ''; b.disabled = false;
   if (error) return msg(traduzir(error), 'erro');
-  msg(''); seguir();
+  contaEscolhida = true; msg(''); seguir();
 });
 
 $('b-esqueci').addEventListener('click', async () => {
@@ -164,7 +177,7 @@ $('f-senha').addEventListener('submit', async e => {
   b.disabled = false; $('nova').value = $('nova2').value = '';
   if (error) return msg(traduzir(error), 'erro');
   history.replaceState({}, '', location.pathname + location.search);
-  msg('Senha criada.', 'ok'); seguir();
+  contaEscolhida = true; msg('Senha criada.', 'ok'); seguir();
 });
 
 $('b-autorizar').addEventListener('click', async () => {
@@ -176,6 +189,12 @@ $('b-negar').addEventListener('click', async () => {
   $('b-autorizar').disabled = $('b-negar').disabled = true;
   const { error } = await sb.auth.oauth.denyAuthorization(authorizationId);
   if (error) msg(traduzir(error), 'erro');
+});
+$('b-continuar').addEventListener('click', () => { contaEscolhida = true; seguir(); });
+$('b-trocar').addEventListener('click', async () => {
+  try { await sb.auth.signOut({ scope: 'local' }); } catch {}
+  try { Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k)); } catch {}
+  msg(''); $('email').value = ''; $('sub').textContent = 'Entre com o e-mail da conta que deseja conectar.'; mostrar('f-login'); $('email').focus();
 });
 $('b-sair').addEventListener('click', async () => { await sb.auth.signOut(); location.replace(location.pathname); });
 
