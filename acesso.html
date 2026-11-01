@@ -129,6 +129,7 @@ async function consentimento(){
 }
 
 async function pronto(){
+  if (params.get('voltar') === 'painel') { location.replace('painel.html'); return; }
   const { data: { user } } = await sb.auth.getUser();
   let info = `<p style="margin-top:0">Acesso ativo para <b>${user.email.replace(/[<>&]/g,'')}</b>.</p>`;
   try {

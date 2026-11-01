@@ -4,188 +4,420 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Clara | Painel</title>
-<style>
-:root{--navy:#102447;--ouro:#C8A23A;--fundo:#f4f5f8;--cartao:#fff;--texto:#1d2633;--suave:#5b6675;--borda:#dfe3ea;--erro:#a3261b;--ok:#1e6b3c;--alerta:#9a5b00;--chip:#f2ecdc}
-@media (prefers-color-scheme:dark){:root{--fundo:#0d1a2e;--cartao:#142540;--texto:#eef2f7;--suave:#b7c2d1;--borda:#2c4363;--navy:#e9eef6;--chip:#2a3a52}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Arial,sans-serif}
-header{background:#102447;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-header .marca{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ouro);font-weight:600}
-header h1{margin:0;font-size:18px;font-weight:600}
-header .quem{margin-left:auto;font-size:13px;opacity:.9;text-align:right}
-header select,header button{font:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #33507a;background:#1a3560;color:#fff;cursor:pointer}
-nav{display:flex;gap:4px;padding:10px 16px;overflow-x:auto;background:var(--cartao);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:2}
-nav button{font:inherit;font-size:14px;padding:8px 14px;border:0;border-radius:999px;background:transparent;color:var(--suave);cursor:pointer;white-space:nowrap}
-nav button[aria-selected=true]{background:var(--chip);color:var(--navy);font-weight:600}
-main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
-.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;padding:16px}
-.cartao h3{margin:0 0 6px;font-size:15px;color:var(--navy)}
-.cartao p{margin:4px 0;color:var(--suave);font-size:14px}
-.cartao ul{margin:6px 0 0;padding-left:18px;color:var(--suave);font-size:14px}
-h2{font-size:16px;margin:22px 0 10px;color:var(--navy)}
-h2:first-child{margin-top:0}
-.chip{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--navy);margin-right:4px}
-.chip.alta,.chip.urgente{background:#fbe3d6;color:#8a2c0d}.chip.aberto{background:#fff2cc;color:var(--alerta)}.chip.concluido{background:#dcefe3;color:var(--ok)}
-.num{font-size:28px;font-weight:600;color:var(--navy);line-height:1.1}
-.vazio{color:var(--suave);font-style:italic}
-.linha{display:flex;gap:10px;align-items:baseline;justify-content:space-between}
-.tempo{font-size:12px;color:var(--suave)}
-details summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:8px}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:var(--suave)}
-.aviso{background:var(--cartao);border:1px solid var(--borda);border-left:4px solid var(--ouro);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:14px;color:var(--suave)}
-#entrar{max-width:420px;margin:12vh auto;text-align:center}
-#entrar a{display:inline-block;margin-top:14px;padding:12px 20px;border-radius:10px;background:#102447;color:#fff;text-decoration:none;font-weight:600}
-[hidden]{display:none!important}
-</style>
+<title>Clara | Painel de Gestão</title>
+<link rel="stylesheet" href="painel.css?v=12">
 </head>
 <body>
-<header>
-  <div><div class="marca">Clara · Gerente de Operações</div><h1 id="empresa-nome">Painel</h1></div>
-  <select id="sel-empresa" hidden aria-label="Escolher empresa"></select>
-  <div class="quem"><div id="quem"></div><button id="b-sair" hidden>Sair</button></div>
-</header>
-<nav id="abas" hidden role="tablist"></nav>
-<main>
-  <section id="entrar" hidden class="cartao">
-    <h2>Entre para ver o painel</h2>
-    <p>Use o mesmo e-mail e senha da Clara.</p>
-    <a href="acesso.html">Entrar</a>
-  </section>
-  <div id="conteudo"></div>
-</main>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Clara.<small>GERENTE DE OPERAÇÕES</small></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="who" id="who"></div>
+    <div class="sidefoot"><button class="btn light sm" id="b-sair" style="width:100%">↪ Sair</button><p id="emp-foot" style="margin:12px 0 0"></p></div>
+  </aside>
+  <div class="main">
+    <header class="top"><strong id="top-titulo">Clara <span class="muted">/ Painel</span></strong><div class="right"><span id="top-quem"></span><img class="mini" src="clara.jpg" alt="Clara"></div></header>
+    <div class="body" id="body"><div class="loading">Carregando o painel…</div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="modal"></div>
+<div class="v3-print" id="print"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js"></script>
 <script>
-const CLARA = { url: 'https://tkdzoxuspcbsnhmzxypd.supabase.co', chavePublica: 'sb_publishable_C5QQEoKHTKtCUL7gUAaq8w_Wsqz6en8' };
+const CLARA = { url: 'https://tkdzoxuspcbsnhmzxypd.supabase.co', chavePublica: 'sb_publishable_C5QQEoKHTKtCUL7gUAaq8w_Wsqz6en8', servidor: 'https://tkdzoxuspcbsnhmzxypd.supabase.co/functions/v1/clara', conversar: 'https://claude.ai/new' };
 const sb = supabase.createClient(CLARA.url, CLARA.chavePublica, { auth: { persistSession: true } });
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const dataBR = d => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
-const diaBR = d => d ? new Date(d + (String(d).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('pt-BR') : '';
-let ctx, empresaId, dados = {}, abaAtual = 'hoje';
+const hojeISO = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+const dBR = d => d ? new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('pt-BR') : '';
+const dtBR = d => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const slug = t => String(t || 'item').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50) + '-' + Math.random().toString(36).slice(2,6);
+const concluida = s => ['concluida','concluída','concluido','concluído','feito','feita','finalizada','entregue'].includes(String(s||'').toLowerCase());
+
+let ctx, E, D = {}, aba = 'hoje', subProc = 'mapa';
 const ABAS = [
-  ['hoje','Hoje'],['equipe','Equipe'],['processos','Processos'],['rotinas','Tarefas e rotinas'],
-  ['indicadores','Indicadores'],['crescimento','Oportunidades'],['diario','Diário de Bordo'],['memoria','Memória'],['acessos','Acessos']
+  ['hoje','◫','HOJE','hoje'], ['processos','⇄','PROCESSOS','processos'], ['indicadores','◉','INDICADORES','indicadores'],
+  ['rotinas','☑','ROTINAS','rotinas'], ['diario','▤','DIÁRIO DE BORDO','diario'], ['crescimento','↗','CRESCIMENTO','crescimento'],
+  ['clara','✧','MINHA CLARA',null], ['config','⚙','CONFIGURAÇÕES','__gestao']
 ];
-const pode = area => ctx?.eu?.permissoes === 'total' || ctx?.eu?.permissoes?.[area]?.ver === true;
-const nomePessoa = id => (ctx?.equipe || []).find(p => p.pessoa_id === id)?.nome || id || '';
+const gestao = () => ctx?.eu?.permissoes === 'total';
+const aprova = () => ['proprietario','gestor','consultora'].includes(ctx?.eu?.perfil);
+const pode = (area, acao = 'ver') => gestao() || (ctx?.eu?.permissoes?.[area]?.ver === true && ctx?.eu?.permissoes?.[area]?.[acao] === true);
+const pessoas = () => (ctx?.equipe || []);
+const nome = id => pessoas().find(p => p.pessoa_id === id)?.nome || '';
+const col = c => (D.registros || []).filter(r => r.colecao === c).map(r => ({ ...r.dados, _rev: r.revisao, _em: r.atualizado_em, _col: r.colecao }));
+const toast = (t, ms = 3200) => { const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = 'none', ms); };
 
+// ───────── gravação: proposta + confirmação (o clique em Salvar é a confirmação) ─────────
+async function salvar(alteracoes, sucesso = 'Registrado no painel.') {
+  try {
+    const { data: p, error: e1 } = await sb.rpc('clara_propor', { p_empresa: E, p_alteracoes: alteracoes });
+    if (e1) throw e1;
+    const { data: r, error: e2 } = await sb.rpc('clara_confirmar', { p_empresa: E, p_proposta: p.proposta_id, p_hash: p.hash, p_chave: 'painel-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), p_confirmado: true });
+    if (e2) throw e2;
+    toast(sucesso); fecharModal(); await carregar(); render(); return r;
+  } catch (e) { toast(traduz(e), 6000); return null; }
+}
+const criar = (colecao, dados, motivo) => salvar([{ colecao, acao: 'criar', id: dados.id, revisao_esperada: null, motivo, dados: { fonte: `Painel — ${ctx.eu.pessoa?.nome || ctx.eu.email} em ${dBR(hojeISO())}`, ...dados } }]);
+const editar = (reg, novos, motivo) => { const { _rev, _em, _col, ...orig } = reg; return salvar([{ colecao: _col, acao: 'editar', id: reg.id, revisao_esperada: _rev, motivo, dados: { ...orig, ...novos } }]); };
+const arquivar = (reg, motivo) => { const { _rev, _em, _col, ...orig } = reg; return salvar([{ colecao: _col, acao: 'excluir', id: reg.id, revisao_esperada: _rev, motivo, dados: orig }], 'Arquivado. O histórico foi preservado.'); };
+function traduz(e) {
+  const m = String(e?.message || e || '');
+  const map = { ACESSO_NEGADO: 'Seu perfil não tem permissão para esta ação.', APROVACAO_RESTRITA: 'Somente a gestão aprova e altera processos publicados no Manual Vivo.', CONFLITO_REVISAO: 'Alguém alterou este item agora há pouco. Recarreguei os dados: tente de novo.', SOMENTE_GESTAO: 'Ação restrita ao proprietário/consultoria.', PESSOA_COM_VINCULOS_ATIVOS: 'Esta pessoa ainda é responsável por itens ativos.', TAREFA_RESTRITA_A_GESTAO: 'Funcionário cria tarefas só para si. Para um colega, avise a gestão pela Clara.', FONTE_OBRIGATORIA: 'Informe a origem da informação.' };
+  for (const k in map) if (m.includes(k)) { if (k === 'CONFLITO_REVISAO') carregar().then(render); return map[k]; }
+  return 'Não foi possível concluir: ' + m;
+}
+
+// ───────── carregamento ─────────
 async function carregar() {
-  const [reg, dia, mem, rec] = await Promise.all([
-    sb.from('clara_registros').select('*').eq('empresa_id', empresaId).eq('arquivado', false).order('colecao').order('id'),
-    sb.from('clara_diario').select('*').eq('empresa_id', empresaId).order('registrado_em', { ascending: false }).limit(100),
-    sb.from('clara_memoria').select('*').eq('empresa_id', empresaId).order('criado_em', { ascending: false }).limit(100),
-    sb.from('clara_recados').select('*').eq('empresa_id', empresaId).order('criado_em', { ascending: false }).limit(200)
-  ]);
-  dados = { registros: reg.data || [], diario: dia.data || [], memoria: mem.data || [], recados: rec.data || [] };
-  if (ctx.eu.permissoes === 'total') { const { data } = await sb.rpc('clara_equipe_listar', { p_empresa: empresaId }); dados.acessos = data; }
+  const q = (t, o = {}) => { let x = sb.from(t).select('*').eq('empresa_id', E); for (const [k, v] of Object.entries(o)) x = x.order(k, { ascending: v }); return x.limit(1000); };
+  const [reg, dia, mem, rec] = await Promise.all([ q('clara_registros', { colecao: true, id: true }).eq('arquivado', false), q('clara_diario', { registrado_em: false }), q('clara_memoria', { criado_em: false }), q('clara_recados', { criado_em: false }) ]);
+  D = { registros: reg.data || [], diario: dia.data || [], memoria: mem.data || [], recados: rec.data || [] };
+  if (aprova()) { const { data } = await sb.rpc('clara_dependencia', { p_empresa: E }); D.dep = data; }
+  if (gestao()) { const { data } = await sb.rpc('clara_equipe_listar', { p_empresa: E }); D.acessos = data; }
 }
-const col = c => dados.registros.filter(r => r.colecao === c).map(r => ({ ...r.dados, _rev: r.revisao, _em: r.atualizado_em }));
 
-function cartaoRegistro(d, extra = '') {
-  const titulo = d.nome || d.titulo || d.id;
-  const resp = d.responsavel_pessoa_id ? `<p>Responsável: <b>${esc(nomePessoa(d.responsavel_pessoa_id))}</b></p>` : '';
-  const prazo = d.prazo ? `<p>Prazo: <b>${esc(diaBR(d.prazo))}</b></p>` : '';
-  const lista = (rot, arr) => Array.isArray(arr) && arr.length ? `<p style="margin-top:8px"><b>${rot}</b></p><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
-  const status = d.status ? `<span class="chip ${esc(d.status)}">${esc(d.status)}</span>` : '';
-  const val = d.status_validacao ? `<span class="chip">${d.status_validacao === 'A_VALIDAR' ? 'a validar' : esc(d.status_validacao)}</span>` : '';
-  return `<div class="cartao"><h3>${esc(titulo)}</h3><div>${status}${val}</div>${resp}${prazo}${extra}
-    ${lista('Etapas', d.etapas)}${lista('A confirmar', d.a_confirmar)}${lista('Responsabilidades', d.responsabilidades)}
-    ${d.excecao ? `<p><b>Exceção:</b> ${esc(d.excecao)}</p>` : ''}${d.decisao_proprietaria ? `<p><b>Decisão da proprietária:</b> ${esc(d.decisao_proprietaria)}</p>` : ''}
-    <details><summary>Origem e detalhes</summary><pre>${esc(JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => !k.startsWith('_'))), null, 2))}</pre><p class="tempo">Revisão ${d._rev} · atualizado ${esc(dataBR(d._em))}</p></details></div>`;
+// ───────── componentes ─────────
+const tagStatusDoc = s => s === 'publicado' ? '<span class="tag ok">Manual Vivo</span>' : s === 'validacao' ? '<span class="tag warn">Aguardando aprovação</span>' : '<span class="tag gray">Descoberta</span>';
+const tagFaixa = f => ({ baixa: '<span class="tag ok">Dependência baixa</span>', moderada: '<span class="tag blue">Dependência moderada</span>', alta: '<span class="tag warn">Dependência alta</span>', critica: '<span class="tag red">Dependência crítica</span>' }[f] || '<span class="tag gray">Não mensurado</span>');
+const tagPrazo = (p, st) => { if (!p) return ''; if (concluida(st)) return `<span class="tag ok">${dBR(p)}</span>`; const h = hojeISO(); return p < h ? `<span class="tag red">Venceu ${dBR(p)}</span>` : p === h ? `<span class="tag warn">Hoje</span>` : `<span class="tag">${dBR(p)}</span>`; };
+const vazio = t => `<div class="empty">${t}</div>`;
+const cab = (eyebrow, titulo, sub, acoes = '') => `<div class="flex" style="align-items:flex-start"><div><div class="eyebrow">${eyebrow}</div><h1>${titulo}</h1><p class="sub">${sub}</p></div><div class="flexwrap">${acoes}</div></div>`;
+const optsPessoas = sel => `<option value="">—</option>` + pessoas().map(p => `<option value="${esc(p.pessoa_id)}" ${p.pessoa_id === sel ? 'selected' : ''}>${esc(p.nome)}${p.funcao ? ' · ' + esc(p.funcao) : ''}</option>`).join('');
+function depRing(nota, faixa) {
+  const cor = { baixa: '#14a07e', moderada: '#2388a9', alta: '#d78a32', critica: '#c4472b' }[faixa] || '#9fb2c2';
+  const pct = nota == null ? 0 : nota;
+  return `<div class="dep-ring" style="background:conic-gradient(${cor} 0 ${pct}%,#e9f0f5 ${pct}% 100%)"><div><strong>${nota ?? '—'}</strong><small>de 100</small></div></div>`;
 }
-function cartaoRecado(r) {
-  const de = (dados.acessos?.acessos || []).find(a => a.usuario_id === r.de_usuario)?.nome || (r.de_usuario === ctx.eu.usuario_id ? 'você' : 'colega');
-  return `<div class="cartao"><div class="linha"><h3>${esc(r.assunto)}</h3><span class="tempo">${esc(dataBR(r.criado_em))}</span></div>
-    <div><span class="chip">${esc(r.tipo)}</span><span class="chip ${esc(r.prioridade)}">${esc(r.prioridade)}</span><span class="chip ${esc(r.status)}">${esc(r.status)}</span></div>
-    <p>${esc(r.mensagem)}</p><p class="tempo">De: ${esc(de)} → Para: ${esc(nomePessoa(r.para_pessoa_id))}${r.prazo ? ' · prazo ' + esc(diaBR(r.prazo)) : ''}</p>
-    ${r.resposta ? `<p><b>Resposta:</b> ${esc(r.resposta)}</p>` : ''}</div>`;
-}
-const grade = (itens, vazio) => itens.length ? `<div class="grade">${itens.join('')}</div>` : `<p class="vazio">${vazio}</p>`;
 
-const VIEWS = {
-  hoje() {
-    const meus = dados.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status));
-    const abertosEmpresa = dados.recados.filter(r => ['aberto','visto'].includes(r.status));
-    const tarefas = col('tarefas').filter(t => !['concluida','concluída','feito'].includes(String(t.status || '').toLowerCase()));
-    const pontos = col('pontos_abertos'), inds = col('indicadores');
-    return `<div class="grade" style="margin-bottom:8px">
-      <div class="cartao"><p>Recados para você</p><div class="num">${meus.length}</div></div>
-      <div class="cartao"><p>Tarefas abertas</p><div class="num">${tarefas.length}</div></div>
-      <div class="cartao"><p>Pontos em aberto</p><div class="num">${pontos.length}</div></div>
-      ${ctx.eu.permissoes === 'total' ? `<div class="cartao"><p>Recados abertos na empresa</p><div class="num">${abertosEmpresa.length}</div></div>` : ''}
-    </div>
-    <h2>Sua caixa de recados</h2>${grade(meus.map(cartaoRecado), 'Nenhum recado aberto para você.')}
-    ${ctx.eu.permissoes === 'total' ? `<h2>Todos os recados da empresa</h2>${grade(dados.recados.slice(0, 30).map(cartaoRecado), 'Nenhum recado ainda.')}` : ''}
-    <h2>Pontos em aberto</h2>${grade(pontos.map(d => cartaoRegistro(d)), 'Nada em aberto.')}
-    <h2>Tarefas</h2>${grade(tarefas.map(d => cartaoRegistro(d)), 'Nenhuma tarefa aberta.')}
-    ${pode('indicadores') && inds.length ? `<h2>Indicadores</h2>${grade(inds.map(d => cartaoRegistro(d, `<div class="num">${esc(d.ultimo_valor ?? '—')}<span style="font-size:14px"> ${esc(d.unidade || '')}</span></div>`)), '')}` : ''}`;
-  },
-  equipe() { return grade((ctx.equipe || []).map(p => `<div class="cartao"><h3>${esc(p.nome)}</h3><p>${esc(p.funcao || '')}${p.area ? ' · ' + esc(p.area) : ''}</p>
-      <div>${p.tem_acesso ? `<span class="chip concluido">usa a Clara</span><span class="chip">${esc(p.perfil)}</span>` : '<span class="chip aberto">sem acesso ainda</span>'}</div>
-      ${Array.isArray(p.responsabilidades) && p.responsabilidades.length ? `<ul>${p.responsabilidades.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`), 'Nenhuma pessoa cadastrada.'); },
-  processos() { return grade([...col('processos'), ...col('procedimentos_rascunho'), ...col('fichas_mapeamento'), ...col('dependencia_proprietario'), ...col('risco_continuidade')].map(d => cartaoRegistro(d)), 'Nenhum processo cadastrado.'); },
-  rotinas() { return grade([...col('tarefas'), ...col('rotinas_rascunho')].map(d => cartaoRegistro(d)), 'Nenhuma tarefa ou rotina.'); },
-  indicadores() { return grade(col('indicadores').map(d => cartaoRegistro(d, `<div class="num">${esc(d.ultimo_valor ?? '—')}<span style="font-size:14px"> ${esc(d.unidade || '')}</span></div>${d.situacao ? `<p>${esc(d.situacao)}</p>` : ''}`)), 'Nenhum indicador.'); },
-  crescimento() { return grade(col('oportunidades').map(d => cartaoRegistro(d)), 'Nenhuma oportunidade registrada.'); },
-  diario() { return grade(dados.diario.map(e => `<div class="cartao"><div class="linha"><h3>${esc(e.assunto)}</h3><span class="tempo">${esc(dataBR(e.registrado_em))}</span></div>
-      <div>${(e.topicos || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div><p>${esc(e.resumo)}</p></div>`), 'O Diário ainda está vazio.'); },
-  memoria() { return grade(dados.memoria.map(m => `<div class="cartao"><div class="linha"><h3>${esc(m.assunto)}</h3><span class="tempo">${esc(dataBR(m.criado_em))}</span></div>
-      <div><span class="chip">${esc(m.visibilidade)}</span></div><pre>${esc(JSON.stringify(m.resumo, null, 2))}</pre></div>`), 'Nenhuma memória guardada ainda.'); },
-  acessos() {
-    const a = dados.acessos || {};
-    return `<h2>Quem usa a Clara</h2>${grade((a.acessos || []).map(x => `<div class="cartao"><h3>${esc(x.nome || x.email)}</h3><p>${esc(x.email)}</p><div><span class="chip">${esc(x.perfil)}</span><span class="chip ${x.ativo ? 'concluido' : 'aberto'}">${x.ativo ? 'ativo' : 'desativado'}</span></div></div>`), 'Ninguém ainda.')}
-      <h2>Convites pendentes</h2>${grade((a.convites_pendentes || []).map(x => `<div class="cartao"><h3>${esc(x.email)}</h3><p>${esc(x.perfil)} · ${esc(nomePessoa(x.pessoa_id))}</p></div>`), 'Nenhum convite pendente.')}
-      <h2>Pessoas do mapeamento sem acesso</h2>${grade((a.pessoas_sem_acesso || []).map(x => `<div class="cartao"><h3>${esc(x.nome)}</h3><p>${esc(x.funcao || '')}</p></div>`), 'Todos têm acesso.')}
-      <p class="tempo">Para dar ou tirar acesso, peça à Clara (ex.: "dá acesso para o Vinícius").</p>`;
-  }
-};
-const areaDaAba = { hoje: 'hoje', equipe: 'equipe', processos: 'processos', rotinas: 'rotinas', indicadores: 'indicadores', crescimento: 'crescimento', diario: 'diario', memoria: 'memoria' };
+// ───────── modal genérico ─────────
+function abrirModal(html) { $('modal').innerHTML = `<div class="v3-modalbg" onclick="if(event.target===this)fecharModal()"><div class="v3-modal">${html}</div></div>`; }
+function fecharModal() { $('modal').innerHTML = ''; }
+const campo = (id, rot, val = '', tipo = 'text', extra = '') => tipo === 'textarea'
+  ? `<label>${rot}<textarea class="v3-input" id="${id}" ${extra}>${esc(val)}</textarea></label>`
+  : `<label>${rot}<input class="v3-input" id="${id}" type="${tipo}" value="${esc(val)}" ${extra}></label>`;
+const sel = (id, rot, html) => `<label>${rot}<select class="v3-input" id="${id}">${html}</select></label>`;
+const val = id => ($(id)?.value ?? '').trim();
+const linhas = id => val(id).split('\n').map(s => s.trim()).filter(Boolean);
 
-function montarAbas() {
-  const visiveis = ABAS.filter(([k]) => k === 'acessos' ? ctx.eu.permissoes === 'total' : pode(areaDaAba[k]));
-  if (!visiveis.some(([k]) => k === abaAtual)) abaAtual = visiveis[0]?.[0];
-  $('abas').innerHTML = visiveis.map(([k, n]) => `<button role="tab" aria-selected="${k === abaAtual}" data-aba="${k}">${n}</button>`).join('');
-  $('abas').hidden = false;
+// ───────── HOJE ─────────
+function vHoje() {
+  const h = hojeISO(), fimSemana = new Date(Date.now() + 6*864e5).toISOString().slice(0,10);
+  const tarefas = col('tarefas'), comp = col('compromissos');
+  const abertas = tarefas.filter(t => !concluida(t.status));
+  const minhas = ctx.eu.pessoa_id && !gestao() ? abertas.filter(t => t.responsavel_pessoa_id === ctx.eu.pessoa_id) : abertas;
+  const prioritarias = [...minhas].sort((a,b) => String(a.prazo||'9999').localeCompare(String(b.prazo||'9999'))).slice(0,6);
+  const meusRecados = D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status));
+  const procs = col('processos'), opsExec = col('oportunidades').filter(o => o.etapa === 'em_execucao');
+  const rotHoje = comp.filter(c => c.data === h); const rotOk = rotHoje.filter(c => concluida(c.status));
+  const dias = [...Array(7)].map((_, i) => { const d = new Date(Date.now() + i*864e5); return { iso: new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10), nome: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) }; });
+  const eventos = iso => [...comp.filter(c => c.data === iso).map(c => ({ t: (c.hora ? c.hora + ' · ' : '') + c.titulo, ok: concluida(c.status) })), ...abertas.filter(t => t.prazo === iso).map(t => ({ t: 'Prazo: ' + t.titulo, ok: false }))];
+  const pontos = col('pontos_abertos');
+  const dep = D.dep;
+  return cab(`VISÃO EXECUTIVA · ${esc(ctx.empresa.nome.toUpperCase())}`, 'Hoje, na sua operação', 'Um panorama para identificar prioridades, compromissos e decisões.', pode('rotinas','criar') ? `<button class="btn" onclick="formTarefa()">+ Nova tarefa</button><button class="btn light" onclick="formCompromisso()">+ Compromisso</button>` : '') + `
+  <div class="grid four">
+    <div class="panel stat"><div class="label">Pendências</div><div class="value">${minhas.length}</div><div class="hint">${minhas.filter(t => t.prazo && t.prazo < h).length} vencida(s)</div></div>
+    <div class="panel stat"><div class="label">Processos</div><div class="value">${procs.length}</div><div class="hint">${procs.filter(p => p.status_doc === 'publicado').length} no Manual Vivo · ${procs.filter(p => p.status_doc === 'validacao').length} aguardando aprovação</div></div>
+    <div class="panel stat"><div class="label">Compromissos de hoje</div><div class="value">${rotOk.length} / ${rotHoje.length}</div><div class="hint">concluídos</div></div>
+    <div class="panel stat"><div class="label">Oportunidades em execução</div><div class="value">${opsExec.length}</div><div class="hint">iniciativas em curso</div></div>
+  </div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel"><div class="flex"><h2>Agenda operacional</h2><button class="btn light sm" onclick="irPara('rotinas')">Abrir rotinas →</button></div>
+      <div class="v3-calendar">${dias.map(d => `<div class="v3-day" style="min-height:110px"><b style="font-size:12px">${esc(d.nome)}</b>${eventos(d.iso).map(ev => `<div class="v3-event ${ev.ok ? 'done' : ''}">${esc(ev.t)}</div>`).join('')}</div>`).join('')}</div></div>
+    <div class="panel"><div class="eyebrow" style="color:#c8a23a">ATENÇÃO DA GESTÃO</div><h2>Pendências prioritárias</h2>
+      <div class="stack">${meusRecados.map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag ${r.prioridade === 'alta' || r.prioridade === 'urgente' ? 'red' : 'blue'}">${esc(r.tipo)}</span></div><p>${esc(r.mensagem)}</p><div class="row-actions"><button class="btn light sm" onclick="recadoStatus('${r.id}','concluido')">Concluir</button><button class="btn light sm" onclick="recadoStatus('${r.id}','visto')">Marcar como visto</button></div></div>`).join('')}
+      ${prioritarias.map(t => cardTarefa(t)).join('') || (meusRecados.length ? '' : vazio('Nenhuma pendência registrada.'))}</div></div>
+  </div>
+  <div class="grid two" style="margin-top:16px">
+    ${aprova() && dep ? `<div class="panel"><div class="eyebrow">INDICADOR ESTRATÉGICO · PROPRIETÁRIA</div><div class="flex" style="align-items:center;margin-top:8px">${depRing(dep.nota, dep.faixa)}<div style="flex:1"><h2 style="margin-bottom:6px">Nota de Dependência</h2><p class="hint">${dep.nota == null ? 'Ainda não mensurada.' : `Faixa ${esc(dep.faixa)} · ${dep.processos_avaliados} de ${dep.processos_inventariados} processos avaliados${dep.status === 'parcial' ? ' (cobertura parcial)' : ''}.`} Quanto menor, menos a empresa depende de uma pessoa só. Publicar processos no Manual Vivo reduz a nota.</p><button class="btn light sm" onclick="irPara('indicadores')">Ver evolução →</button></div></div></div>` : ''}
+    <div class="panel"><h2>Pontos em aberto</h2><div class="stack">${pontos.map(p => `<div class="item"><div class="flex"><h4>${esc(p.titulo || p.nome)}</h4>${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}</div>${p.detalhe ? `<p>${esc(p.detalhe)}</p>` : ''}</div>`).join('') || vazio('Nenhum ponto em aberto.')}</div></div>
+  </div>`;
 }
+function cardTarefa(t) {
+  const meu = t.responsavel_pessoa_id === ctx.eu.pessoa_id;
+  return `<div class="item"><div class="flex"><h4 class="${concluida(t.status) ? 'list-done' : ''}">${esc(t.titulo || t.nome)}</h4>${tagPrazo(t.prazo, t.status)}</div>
+    ${t.descricao ? `<p>${esc(t.descricao)}</p>` : ''}<div class="meta">${t.responsavel_pessoa_id ? `<span class="tag">${esc(nome(t.responsavel_pessoa_id))}</span>` : ''}${t.prioridade ? `<span class="tag ${t.prioridade === 'alta' ? 'warn' : 'gray'}">${esc(t.prioridade)}</span>` : ''}</div>
+    ${!concluida(t.status) && (meu || pode('rotinas','editar')) ? `<div class="row-actions" style="margin-top:9px"><button class="btn sm" onclick="concluirTarefa('${esc(t.id)}')">Concluir</button>${pode('rotinas','editar') ? `<button class="btn light sm" onclick="formTarefa('${esc(t.id)}')">Editar</button>` : ''}</div>` : ''}</div>`;
+}
+async function recadoStatus(id, st) { const { error } = await sb.rpc('clara_recado_atualizar', { p_empresa: E, p_recado: id, p_status: st, p_resposta: null }); if (error) return toast(traduz(error)); toast('Atualizado.'); await carregar(); render(); }
+function concluirTarefa(id) {
+  const t = col('tarefas').find(x => x.id === id);
+  abrirModal(`<h2>Concluir tarefa</h2><p class="v3-muted">${esc(t.titulo)}</p>${campo('f-conc','Como ficou? (opcional)','', 'textarea')}<div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="editar(col('tarefas').find(x=>x.id==='${esc(id)}'),{status:'concluida',conclusao:val('f-conc')||null,concluida_em:new Date().toISOString()},'Tarefa concluída pelo painel')">Concluir</button></div>`);
+}
+function formTarefa(id) {
+  const t = id ? col('tarefas').find(x => x.id === id) : {};
+  abrirModal(`<h2>${id ? 'Editar tarefa' : 'Nova tarefa'}</h2><p class="v3-muted">O responsável é avisado automaticamente na Clara.</p>
+    ${campo('f-tit','O que precisa ser feito', t.titulo || '')}${campo('f-desc','Critério de pronto / detalhes', t.descricao || '', 'textarea')}
+    <div class="formrow">${aprova() ? sel('f-resp','Responsável', optsPessoas(t.responsavel_pessoa_id)) : sel('f-resp','Responsável (você)', `<option value="${esc(ctx.eu.pessoa_id || '')}">${esc(ctx.eu.pessoa?.nome || 'Você')}</option>`)}${campo('f-prazo','Prazo', t.prazo || '', 'date')}</div>
+    ${aprova() ? '' : '<p class="v3-muted">Para pedir algo a um colega, avise a gestão pela Clara (um alerta) — ela decide e atribui.</p>'}
+    ${sel('f-prio','Prioridade', ['normal','alta','baixa'].map(p => `<option ${t.prioridade === p ? 'selected' : ''}>${p}</option>`).join(''))}
+    <div class="acts">${id && pode('rotinas','excluir') ? `<button class="v3-btn alt" onclick="arquivar(col('tarefas').find(x=>x.id==='${esc(id)}'),'Tarefa arquivada pelo painel')">Arquivar</button>` : ''}<button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarTarefa('${esc(id || '')}')">Salvar</button></div>`);
+}
+function salvarTarefa(id) {
+  if (!val('f-tit')) return toast('Descreva a tarefa.');
+  const d = { titulo: val('f-tit'), descricao: val('f-desc') || null, responsavel_pessoa_id: val('f-resp') || null, prazo: val('f-prazo') || null, prioridade: val('f-prio') };
+  if (id) return editar(col('tarefas').find(x => x.id === id), d, 'Tarefa atualizada pelo painel');
+  return criar('tarefas', { id: 't-' + slug(d.titulo), status: 'aberta', ...d }, 'Tarefa criada pelo painel');
+}
+
+// ───────── PROCESSOS / MANUAL VIVO ─────────
+function vProcessos() {
+  const procs = col('processos'); const notas = Object.fromEntries((D.dep?.processos || []).map(p => [p.processo_id, p]));
+  const grupos = { mapa: procs, descoberta: procs.filter(p => p.status_doc !== 'publicado'), manual: procs.filter(p => p.status_doc === 'publicado') };
+  const lista = grupos[subProc] || procs;
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Processos', 'Da visão geral ao procedimento que a equipe executa.', `${pode('processos','criar') ? `<button class="btn" onclick="formProcesso()">+ Novo processo</button>` : ''}<button class="btn light" onclick="exportarManual()">⤓ Exportar Manual Vivo (PDF)</button>`) + `
+  <div class="pillnav">${[['mapa','Mapa'],['descoberta',`Descoberta e validação (${grupos.descoberta.length})`],['manual',`Manual Vivo (${grupos.manual.length})`]].map(([k,n]) => `<button class="${subProc === k ? 'active' : ''}" onclick="subProc='${k}';render()">${n}</button>`).join('')}</div>
+  ${subProc === 'descoberta' && aprova() && grupos.descoberta.some(p => p.status_doc === 'validacao') ? `<div class="v3-alert" style="margin-bottom:14px">${grupos.descoberta.filter(p => p.status_doc === 'validacao').length} processo(s) aguardando sua aprovação para entrar no Manual Vivo.</div>` : ''}
+  <div class="v3-mapgrid">${lista.map(p => `<div class="item click" onclick="verProcesso('${esc(p.id)}')"><div class="flex"><h4>${esc(p.nome)}</h4>${p.critico ? '<span class="tag warn">crítico</span>' : ''}</div>
+    <p>${esc(p.objetivo || '')}</p><div class="meta">${tagStatusDoc(p.status_doc)}${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}${notas[p.id] ? tagFaixa(notas[p.id].faixa) : ''}${p.versao ? `<span class="tag gray">v${esc(p.versao)}</span>` : ''}</div></div>`).join('') || vazio('Nenhum processo nesta visão.')}</div>`;
+}
+function verProcesso(id) {
+  const p = col('processos').find(x => x.id === id); const lst = (rot, a) => Array.isArray(a) && a.length ? `<h3 style="margin-top:14px">${rot}</h3>${a.map((x,i) => `<div class="v3-step"><b>${rot === 'Etapas' ? (i+1) + '. ' : ''}</b>${esc(x)}</div>`).join('')}` : '';
+  const podeEditar = p.status_doc === 'publicado' ? aprova() : pode('processos','editar');
+  abrirModal(`<div class="flex"><h2>${esc(p.nome)}</h2>${tagStatusDoc(p.status_doc)}</div>
+    <p class="v3-muted">${esc(p.objetivo || '')}</p>
+    <div class="formrow"><p><b>Responsável:</b> ${esc(nome(p.responsavel_pessoa_id) || '—')}</p><p><b>Substituto:</b> ${esc(nome(p.substituto_pessoa_id) || p.substituto || '—')}</p></div>
+    ${p.gatilho ? `<p><b>Início:</b> ${esc(p.gatilho)}</p>` : ''}${p.prazo ? `<p><b>Prazo:</b> ${esc(p.prazo)}</p>` : ''}${p.criterio_conclusao ? `<p><b>Concluído quando:</b> ${esc(p.criterio_conclusao)}</p>` : ''}
+    ${lst('Etapas', p.etapas)}${lst('Exceções', [].concat(p.excecoes || p.excecao || []))}${lst('A confirmar', p.a_confirmar || p.lacunas)}
+    ${p.decisao_proprietaria ? `<p><b>Decisão da proprietária:</b> ${esc(p.decisao_proprietaria)}</p>` : ''}
+    <p class="v3-muted" style="margin-top:12px">${p.aprovado_em ? `Aprovado em ${dBR(p.aprovado_em)} · ` : ''}Revisão ${p._rev} · atualizado ${dtBR(p._em)} · origem: ${esc(p.fonte || '')}</p>
+    <div class="acts">
+      ${podeEditar ? `<button class="v3-btn alt" onclick="formProcesso('${esc(id)}')">Editar</button>` : ''}
+      ${p.status_doc === 'descoberta' && pode('processos','editar') ? `<button class="v3-btn alt" onclick="editar(col('processos').find(x=>x.id==='${esc(id)}'),{status_doc:'validacao'},'Enviado para validação')">Enviar para validação</button>` : ''}
+      ${p.status_doc === 'validacao' && aprova() ? `<button class="v3-btn alt" onclick="editar(col('processos').find(x=>x.id==='${esc(id)}'),{status_doc:'descoberta'},'Devolvido para ajustes')">Devolver para ajustes</button><button class="v3-btn" onclick="publicar('${esc(id)}')">Aprovar e publicar</button>` : ''}
+      <button class="v3-btn alt" onclick="fecharModal()">Fechar</button></div>`);
+}
+function publicar(id) {
+  if (!confirmar('Aprovar este processo e publicar no Manual Vivo?')) return;
+  const p = col('processos').find(x => x.id === id);
+  editar(p, { status_doc: 'publicado', versao: (Number(p.versao) || 0) + 1, aprovado_em: new Date().toISOString(), aprovado_por: ctx.eu.pessoa?.nome || ctx.eu.email }, 'Processo aprovado e publicado no Manual Vivo');
+}
+const confirmar = t => window.confirm(t);
+function formProcesso(id) {
+  const p = id ? col('processos').find(x => x.id === id) : { status_doc: 'descoberta' };
+  abrirModal(`<h2>${id ? 'Editar processo' : 'Novo processo'}</h2><p class="v3-muted">${aprova() ? '' : 'Sua contribuição entra como sugestão; a gestão aprova antes de publicar no Manual Vivo.'}</p>
+    ${campo('p-nome','Nome', p.nome || '')}${campo('p-obj','Objetivo', p.objetivo || '', 'textarea')}
+    <div class="formrow">${sel('p-resp','Responsável', optsPessoas(p.responsavel_pessoa_id))}${sel('p-subs','Substituto', optsPessoas(p.substituto_pessoa_id))}</div>
+    ${campo('p-gat','Como começa (gatilho)', p.gatilho || '')}${campo('p-etapas','Etapas (uma por linha)', (p.etapas || []).join('\n'), 'textarea')}
+    ${campo('p-exc','Exceções (uma por linha)', [].concat(p.excecoes || p.excecao || []).join('\n'), 'textarea')}
+    <div class="formrow">${campo('p-prazo','Prazo', p.prazo || '')}${campo('p-crit','Concluído quando…', p.criterio_conclusao || '')}</div>
+    <label style="display:flex;gap:8px;align-items:center;margin:4px 0 10px"><input type="checkbox" id="p-critico" ${p.critico ? 'checked' : ''}> Processo crítico</label>
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarProcesso('${esc(id || '')}')">Salvar</button></div>`);
+}
+function salvarProcesso(id) {
+  if (!val('p-nome')) return toast('Dê um nome ao processo.');
+  const d = { nome: val('p-nome'), objetivo: val('p-obj') || null, responsavel_pessoa_id: val('p-resp') || null, substituto_pessoa_id: val('p-subs') || null, gatilho: val('p-gat') || null, etapas: linhas('p-etapas'), excecoes: linhas('p-exc'), prazo: val('p-prazo') || null, criterio_conclusao: val('p-crit') || null, critico: $('p-critico').checked };
+  if (id) { const p = col('processos').find(x => x.id === id); return editar(p, d, 'Processo atualizado pelo painel'); }
+  return criar('processos', { id: 'proc-' + slug(d.nome), status_doc: 'descoberta', versao: 0, ...d }, 'Processo criado pelo painel');
+}
+function exportarManual() {
+  const procs = col('processos').filter(p => p.status_doc === 'publicado');
+  if (!procs.length) return toast('Ainda não há processos publicados no Manual Vivo.');
+  $('print').innerHTML = `<h1>Manual Vivo · ${esc(ctx.empresa.nome)}</h1><p>Procedimentos oficiais aprovados · exportado em ${dtBR(new Date())} por ${esc(ctx.eu.pessoa?.nome || ctx.eu.email)}</p>` +
+    procs.map(p => `<article><h2>${esc(p.nome)} <small>v${esc(p.versao || 1)}</small></h2><p>${esc(p.objetivo || '')}</p><p><b>Responsável:</b> ${esc(nome(p.responsavel_pessoa_id) || '—')} · <b>Substituto:</b> ${esc(nome(p.substituto_pessoa_id) || '—')}</p>${p.gatilho ? `<p><b>Início:</b> ${esc(p.gatilho)}</p>` : ''}${(p.etapas || []).map((e,i) => `<div class="v3-step"><b>${i+1}.</b> ${esc(e)}</div>`).join('')}${[].concat(p.excecoes || []).length ? `<p><b>Exceções:</b></p><ul>${[].concat(p.excecoes).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${p.criterio_conclusao ? `<p><b>Concluído quando:</b> ${esc(p.criterio_conclusao)}</p>` : ''}<p style="color:#777;font-size:11px">Aprovado ${p.aprovado_em ? 'em ' + dBR(p.aprovado_em) : ''} ${p.aprovado_por ? 'por ' + esc(p.aprovado_por) : ''}</p></article>`).join('');
+  setTimeout(() => window.print(), 100);
+}
+
+// ───────── INDICADORES ─────────
+function vIndicadores() {
+  const inds = col('indicadores'); const dep = D.dep;
+  const medidos = inds.filter(i => typeof i.ultimo_valor === 'number');
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Indicadores', 'Acompanhe resultados e cadastre o que importa para sua empresa.', pode('indicadores','criar') ? `<button class="btn" onclick="formIndicador()">+ Novo indicador</button>` : '') + `
+  <div class="grid four"><div class="panel stat"><div class="label">Indicadores</div><div class="value">${inds.length}</div><div class="hint">cadastrados</div></div><div class="panel stat"><div class="label">Mensurados</div><div class="value">${medidos.length}</div><div class="hint">com registro</div></div><div class="panel stat"><div class="label">Não mensurados</div><div class="value">${inds.length - medidos.length}</div><div class="hint">aguardando medição</div></div><div class="panel stat"><div class="label">Metas</div><div class="value">${inds.filter(i => i.meta && !/pendente/i.test(i.meta)).length}</div><div class="hint">definidas</div></div></div>
+  ${aprova() && dep ? `<div class="panel" style="margin-top:16px"><div class="eyebrow">INDICADOR ESTRATÉGICO · PROPRIETÁRIA</div><div class="grid two" style="margin-top:10px;align-items:center">
+    <div class="flex" style="justify-content:flex-start;gap:22px">${depRing(dep.nota, dep.faixa)}<div><h2 style="margin-bottom:6px">Nota de Dependência</h2>${tagFaixa(dep.faixa)}<p class="hint" style="margin-top:10px">${dep.processos_avaliados} de ${dep.processos_inventariados} processos avaliados${dep.status === 'parcial' ? ' · cobertura parcial' : ''}. Quanto menor, menos a operação depende de uma pessoa só.</p></div></div>
+    <div><h3>Evolução mensal</h3><div class="hist">${(dep.historico || []).map(h => `<div style="height:${Math.max(4, h.nota || 0)}%"><b>${h.nota ?? '—'}</b><small>${esc(h.mes.slice(5))}/${esc(h.mes.slice(2,4))}</small></div>`).join('')}</div></div></div>
+    <h3 style="margin-top:28px">Por processo</h3><div class="stack">${(dep.processos || []).map(p => `<div class="flex item"><span>${esc(p.nome)}</span><span class="flexwrap">${p.publicado ? '<span class="tag ok">Manual Vivo</span>' : ''}${tagFaixa(p.faixa)}<b>${p.nota ?? '—'}</b></span></div>`).join('')}</div>
+    <p class="hint" style="margin-top:12px">O que reduz a nota: documentar e publicar os processos no Manual Vivo, preparar substitutos e delegar decisões.</p></div>` : ''}
+  <div class="panel" style="margin-top:16px"><h2>Indicadores cadastrados</h2><div class="tablewrap"><table><tr><th>Indicador</th><th>Valor atual</th><th>Meta</th><th>Responsável</th><th>Situação</th><th></th></tr>
+  ${inds.map(i => `<tr><td><b>${esc(i.nome)}</b><br><span class="muted">${esc(i.definicao || '')}</span></td><td><b>${i.ultimo_valor ?? '—'}</b> ${esc(i.unidade || '')}</td><td>${esc(i.meta || '—')}</td><td>${esc(nome(i.responsavel_pessoa_id) || i.responsavel || '—')}</td><td>${esc(i.situacao || i.status || '')}</td><td class="row-actions">${pode('indicadores','editar') ? `<button class="btn light sm" onclick="formMedicao('${esc(i.id)}')">+ Medição</button><button class="btn light sm" onclick="formIndicador('${esc(i.id)}')">Editar</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="6">${vazio('Nenhum indicador cadastrado.')}</td></tr>`}</table></div></div>`;
+}
+function formIndicador(id) {
+  const i = id ? col('indicadores').find(x => x.id === id) : {};
+  abrirModal(`<h2>${id ? 'Editar indicador' : 'Novo indicador'}</h2>${campo('i-nome','Nome', i.nome || '')}${campo('i-def','Definição / fórmula', i.definicao || '', 'textarea')}
+   <div class="formrow">${campo('i-un','Unidade', i.unidade || '')}${campo('i-meta','Meta', i.meta || '')}</div>
+   <div class="formrow">${campo('i-freq','Frequência', i.frequencia || '')}${campo('i-fonte','Fonte do dado', i.fonte_dado || '')}</div>
+   <div class="formrow">${sel('i-resp','Responsável', optsPessoas(i.responsavel_pessoa_id))}${sel('i-proc','Processo', `<option value="">—</option>` + col('processos').map(p => `<option value="${esc(p.id)}" ${p.id === i.processo_id ? 'selected' : ''}>${esc(p.nome)}</option>`).join(''))}</div>
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarIndicador('${esc(id || '')}')">Salvar</button></div>`);
+}
+function salvarIndicador(id) {
+  if (!val('i-nome')) return toast('Dê um nome ao indicador.');
+  const d = { nome: val('i-nome'), definicao: val('i-def') || null, unidade: val('i-un') || null, meta: val('i-meta') || null, frequencia: val('i-freq') || null, fonte_dado: val('i-fonte') || null, responsavel_pessoa_id: val('i-resp') || null, processo_id: val('i-proc') || null };
+  if (id) return editar(col('indicadores').find(x => x.id === id), d, 'Indicador atualizado pelo painel');
+  return criar('indicadores', { id: 'ind-' + slug(d.nome), ultimo_valor: null, medicoes: [], ...d }, 'Indicador criado pelo painel');
+}
+function formMedicao(id) {
+  const i = col('indicadores').find(x => x.id === id);
+  abrirModal(`<h2>Registrar medição</h2><p class="v3-muted">${esc(i.nome)}</p><div class="formrow">${campo('m-val','Valor', '', 'number', 'step="any"')}${campo('m-data','Data', hojeISO(), 'date')}</div>${campo('m-fonte','Documento, sistema ou registro consultado', '')}
+   ${(i.medicoes || []).length ? `<h3>Últimas medições</h3>${(i.medicoes || []).slice(-5).reverse().map(m => `<p class="v3-muted">${dBR(m.data)}: <b>${esc(m.valor)}</b> ${esc(i.unidade || '')} · ${esc(m.fonte || '')}</p>`).join('')}` : ''}
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarMedicao('${esc(id)}')">Salvar medição</button></div>`);
+}
+function salvarMedicao(id) {
+  const v = Number(val('m-val')); if (val('m-val') === '' || Number.isNaN(v)) return toast('Informe um número.');
+  if (!val('m-fonte')) return toast('Informe de onde veio o dado.');
+  const i = col('indicadores').find(x => x.id === id);
+  return editar(i, { ultimo_valor: v, situacao: 'medido', medicoes: [...(i.medicoes || []), { data: val('m-data'), valor: v, fonte: val('m-fonte'), por: ctx.eu.pessoa?.nome || ctx.eu.email }] }, 'Medição registrada pelo painel');
+}
+
+// ───────── ROTINAS ─────────
+let semana = 0;
+function vRotinas() {
+  const base = new Date(); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + semana * 7);
+  const dias = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() + i); return { iso: new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10), nome: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) }; });
+  const comp = col('compromissos'), tarefas = col('tarefas'), rot = col('rotinas');
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Rotinas', 'Planeje compromissos por dia e semana. Pendências vencidas aparecem no Hoje.', pode('rotinas','criar') ? `<button class="btn" onclick="formCompromisso()">+ Compromisso</button><button class="btn light" onclick="formRotina()">+ Rotina recorrente</button><button class="btn light" onclick="formTarefa()">+ Tarefa</button>` : '') + `
+  <div class="panel"><div class="flex" style="margin-bottom:12px"><div class="flexwrap"><button class="btn light sm" onclick="semana--;render()">←</button><button class="btn light sm" onclick="semana=0;render()">Hoje</button><button class="btn light sm" onclick="semana++;render()">→</button><b>${dBR(dias[0].iso)} — ${dBR(dias[6].iso)}</b></div></div>
+  <div class="v3-calendar">${dias.map(d => `<div class="v3-day"><b style="font-size:12px">${esc(d.nome)}</b>
+    ${comp.filter(c => c.data === d.iso).sort((a,b) => String(a.hora||'').localeCompare(String(b.hora||''))).map(c => `<div class="v3-event ${concluida(c.status) ? 'done' : ''} click" onclick="acaoCompromisso('${esc(c.id)}')">${c.hora ? `<b>${esc(c.hora)}</b> ` : ''}${esc(c.titulo)}<br><span class="v3-muted">${esc(nome(c.responsavel_pessoa_id))}</span></div>`).join('')}
+    ${tarefas.filter(t => t.prazo === d.iso).map(t => `<div class="v3-event ${concluida(t.status) ? 'done' : ''}" style="border-left-color:#d78a32">Prazo: ${esc(t.titulo)}<br><span class="v3-muted">${esc(nome(t.responsavel_pessoa_id))}</span></div>`).join('')}</div>`).join('')}</div></div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel"><h2>Rotinas recorrentes</h2><div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || '')}</span></div><p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || '')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p></div>`).join('') || vazio('Nenhuma rotina recorrente registrada.')}</div></div>
+    <div class="panel"><h2>Tarefas</h2><div class="stack">${tarefas.sort((a,b) => (concluida(a.status) - concluida(b.status)) || String(a.prazo||'9999').localeCompare(String(b.prazo||'9999'))).map(cardTarefa).join('') || vazio('Nenhuma tarefa.')}</div></div>
+  </div>`;
+}
+function formCompromisso() {
+  abrirModal(`<h2>Novo compromisso</h2>${campo('c-tit','Compromisso', '', 'text', 'placeholder="Ex.: Reunião com fornecedor"')}<div class="formrow">${campo('c-data','Data', hojeISO(), 'date')}${campo('c-hora','Horário', '', 'time')}</div>${sel('c-resp','Responsável', optsPessoas(ctx.eu.pessoa_id))}
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="if(!val('c-tit'))return toast('Descreva o compromisso.');criar('compromissos',{id:'c-'+slug(val('c-tit')),titulo:val('c-tit'),data:val('c-data'),hora:val('c-hora')||null,responsavel_pessoa_id:val('c-resp')||null,status:'aberto'},'Compromisso adicionado pelo painel')">Adicionar</button></div>`);
+}
+function acaoCompromisso(id) {
+  const c = col('compromissos').find(x => x.id === id);
+  abrirModal(`<h2>${esc(c.titulo)}</h2><p class="v3-muted">${dBR(c.data)} ${esc(c.hora || '')} · ${esc(nome(c.responsavel_pessoa_id))}</p><div class="acts">${pode('rotinas','excluir') ? `<button class="v3-btn alt" onclick="arquivar(col('compromissos').find(x=>x.id==='${esc(id)}'),'Compromisso removido')">Remover</button>` : ''}<button class="v3-btn alt" onclick="fecharModal()">Fechar</button>${!concluida(c.status) && pode('rotinas','editar') ? `<button class="v3-btn" onclick="editar(col('compromissos').find(x=>x.id==='${esc(id)}'),{status:'concluido'},'Compromisso concluído')">Marcar como feito</button>` : ''}</div>`);
+}
+function formRotina() {
+  abrirModal(`<h2>Nova rotina recorrente</h2>${campo('r-nome','Atividade', '')}<div class="formrow">${campo('r-freq','Frequência', '', 'text', 'placeholder="Ex.: semanal, diária, mensal"')}${campo('r-dias','Dias', '', 'text', 'placeholder="Ex.: segunda e quinta"')}</div><div class="formrow">${campo('r-hora','Horário', '', 'time')}${sel('r-resp','Responsável', optsPessoas())}</div>${campo('r-crit','Critério de execução', '')}
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="if(!val('r-nome'))return toast('Descreva a rotina.');criar('rotinas',{id:'r-'+slug(val('r-nome')),nome:val('r-nome'),frequencia:val('r-freq')||null,dias:val('r-dias')||null,hora:val('r-hora')||null,responsavel_pessoa_id:val('r-resp')||null,criterio:val('r-crit')||null},'Rotina criada pelo painel')">Salvar</button></div>`);
+}
+
+// ───────── DIÁRIO ─────────
+let filtroDiario = '';
+const TOPICOS = ['Decisões','Avanços e conquistas','Problemas e obstáculos','Mudanças operacionais','Aprendizados','Planejamento'];
+function vDiario() {
+  const lista = D.diario.filter(e => !filtroDiario || (e.topicos || []).includes(filtroDiario));
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Diário de Bordo', 'Acompanhe o que aconteceu na empresa e quem fez cada atualização.', pode('diario','criar') ? `<button class="btn" onclick="formDiario()">+ Novo registro</button>` : '') + `
+  <div class="pillnav"><button class="${!filtroDiario ? 'active' : ''}" onclick="filtroDiario='';render()">Todos</button>${TOPICOS.map(t => `<button class="${filtroDiario === t ? 'active' : ''}" onclick="filtroDiario='${t}';render()">${t}</button>`).join('')}</div>
+  <div class="panel"><div class="timeline">${lista.map(e => `<div><div class="flex"><b>${esc(e.assunto)}</b><span class="v3-muted">${dtBR(e.registrado_em)}</span></div><div class="meta" style="margin:6px 0">${(e.topicos || []).map(t => `<span class="v3-chip">${esc(t)}</span>`).join(' ')}</div><p class="v3-muted" style="margin:0">${esc(e.resumo)}</p></div>`).join('') || vazio('Seu diário começa com um registro. Registre uma decisão, um avanço ou um aprendizado.')}</div></div>
+  ${pode('memoria') ? `<div class="panel" style="margin-top:16px"><h2>Memória da empresa</h2><p class="hint">Sínteses guardadas nas conversas com a Clara.</p><div class="stack">${D.memoria.map(m => `<div class="item"><div class="flex"><h4>${esc(m.assunto)}</h4><span class="tag ${m.visibilidade === 'privada' ? 'gray' : 'blue'}">${esc(m.visibilidade)}</span></div><p>${esc(Object.values(m.resumo || {}).map(v => typeof v === 'string' ? v : JSON.stringify(v)).join(' · '))}</p><p class="v3-muted">${dtBR(m.criado_em)}</p></div>`).join('') || vazio('Nenhuma memória guardada ainda.')}</div></div>` : ''}`;
+}
+function formDiario() {
+  abrirModal(`<h2>Novo registro no Diário</h2>${campo('dj-ass','Assunto', '')}${campo('dj-res','O que aconteceu', '', 'textarea')}${sel('dj-top','Tópico', TOPICOS.map(t => `<option>${t}</option>`).join(''))}
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarDiario()">Registrar</button></div>`);
+}
+async function salvarDiario() {
+  if (!val('dj-ass') || !val('dj-res')) return toast('Preencha assunto e descrição.');
+  const { error } = await sb.rpc('clara_diario_registrar', { p_empresa: E, p_chave: 'painel-' + Date.now(), p_topicos: [val('dj-top')], p_assunto: val('dj-ass'), p_resumo: val('dj-res'), p_fonte: { origem: 'painel', por: ctx.eu.pessoa?.nome || ctx.eu.email }, p_confirmado: true });
+  if (error) return toast(traduz(error)); toast('Registrado no Diário.'); fecharModal(); await carregar(); render();
+}
+
+// ───────── CRESCIMENTO ─────────
+function vCrescimento() {
+  const ops = col('oportunidades'); const g = e => ops.filter(o => (o.etapa || 'identificada') === e);
+  const card = o => `<div class="item click" onclick="formOportunidade('${esc(o.id)}')"><h4>${esc(o.titulo || o.nome)}</h4><p>${esc(o.descricao || '')}</p><div class="meta">${o.responsavel_pessoa_id ? `<span class="tag">${esc(nome(o.responsavel_pessoa_id))}</span>` : ''}${o.impacto ? `<span class="tag blue">impacto ${esc(o.impacto)}</span>` : ''}${o.prazo ? tagPrazo(o.prazo) : ''}</div></div>`;
+  return `<div class="pb-hero"><div><div class="eyebrow" style="color:#c8a23a">ESTRATÉGIA E EVOLUÇÃO</div><h2>Crescimento</h2><p>Da oportunidade à execução: visualize, priorize e acompanhe cada iniciativa.</p></div>${pode('crescimento','criar') ? `<button class="btn light" onclick="formOportunidade()">+ Nova oportunidade</button>` : ''}</div>
+  <div class="grid four"><div class="panel stat"><div class="label">Oportunidades mapeadas</div><div class="value">${ops.length}</div></div><div class="panel stat"><div class="label">Em execução</div><div class="value">${g('em_execucao').length}</div></div><div class="panel stat"><div class="label">Para avaliar</div><div class="value">${g('identificada').length}</div></div><div class="panel stat"><div class="label">Com resultado</div><div class="value">${g('resultado').length}</div></div></div>
+  <div class="grid three" style="margin-top:16px">${[['identificada','01 · IDENTIFICADAS'],['em_execucao','02 · EM EXECUÇÃO'],['resultado','03 · RESULTADOS']].map(([k,n]) => `<div class="panel"><h3>${n}</h3><div class="stack">${g(k).map(card).join('') || vazio('Nenhuma.')}</div></div>`).join('')}</div>`;
+}
+function formOportunidade(id) {
+  const o = id ? col('oportunidades').find(x => x.id === id) : { etapa: 'identificada' };
+  const podeEd = id ? pode('crescimento','editar') : pode('crescimento','criar');
+  abrirModal(`<h2>${id ? esc(o.titulo || o.nome) : 'Nova oportunidade'}</h2>${campo('o-tit','Oportunidade', o.titulo || o.nome || '', 'text', podeEd ? '' : 'disabled')}${campo('o-desc','Descrição / plano', o.descricao || '', 'textarea', podeEd ? '' : 'disabled')}
+   <div class="formrow">${sel('o-etapa','Etapa', [['identificada','Identificada'],['em_execucao','Em execução'],['resultado','Resultado']].map(([k,n]) => `<option value="${k}" ${o.etapa === k ? 'selected' : ''}>${n}</option>`).join(''))}${sel('o-imp','Impacto', ['','baixo','médio','alto'].map(x => `<option ${o.impacto === x ? 'selected' : ''}>${x}</option>`).join(''))}</div>
+   <div class="formrow">${sel('o-resp','Responsável', optsPessoas(o.responsavel_pessoa_id))}${campo('o-prazo','Prazo', o.prazo || '', 'date')}</div>${campo('o-res','Resultado observado', o.resultado || '', 'textarea')}
+   <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">${podeEd ? 'Cancelar' : 'Fechar'}</button>${podeEd ? `<button class="v3-btn" onclick="salvarOportunidade('${esc(id || '')}')">Salvar</button>` : ''}</div>`);
+}
+function salvarOportunidade(id) {
+  if (!val('o-tit')) return toast('Descreva a oportunidade.');
+  const d = { titulo: val('o-tit'), descricao: val('o-desc') || null, etapa: val('o-etapa'), impacto: val('o-imp') || null, responsavel_pessoa_id: val('o-resp') || null, prazo: val('o-prazo') || null, resultado: val('o-res') || null };
+  if (id) return editar(col('oportunidades').find(x => x.id === id), d, 'Oportunidade atualizada pelo painel');
+  return criar('oportunidades', { id: 'op-' + slug(d.titulo), ...d }, 'Oportunidade criada pelo painel');
+}
+
+// ───────── MINHA CLARA ─────────
+function vClara() {
+  const meus = D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id);
+  const enviados = D.recados.filter(r => r.de_usuario === ctx.eu.usuario_id);
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Minha Clara', 'Converse com a Clara, acompanhe seus avisos e o que você enviou à equipe.') + `
+  <div class="hero"><img src="clara.jpg" alt="Clara"><div><div class="eyebrow" style="color:#c8a23a">SUA GERENTE DE OPERAÇÕES</div><h2>Olá, ${esc(ctx.eu.pessoa?.nome || '')}! Eu sou a Clara.</h2><p>Eu acompanho a operação da ${esc(ctx.empresa.nome)} com você: priorizo, organizo processos e rotinas, acompanho os combinados e registro aqui no painel o que for aprovado.</p></div></div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel"><h2>Conversar com a Clara</h2><p class="hint">Abra o Claude e diga "Oi, Clara". Experimente: <b>+como estamos hoje?</b>, <b>+pendências</b>, <b>+processos</b>, <b>+acompanhar</b>, <b>+ajuda</b>.</p><a class="btn" style="display:inline-block;text-decoration:none;margin-top:8px" href="${CLARA.conversar}" target="_blank" rel="noopener">Abrir a Clara no Claude ↗</a></div>
+    <div class="panel"><h2>Meus avisos</h2><div class="stack">${meus.slice(0,8).map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag ${r.status === 'concluido' ? 'ok' : r.status === 'aberto' ? 'warn' : 'gray'}">${esc(r.status)}</span></div><p>${esc(r.mensagem)}</p><p class="v3-muted">${dtBR(r.criado_em)}</p>${['aberto','visto'].includes(r.status) ? `<div class="row-actions"><button class="btn light sm" onclick="recadoStatus('${r.id}','concluido')">Concluir</button></div>` : ''}</div>`).join('') || vazio('Nenhum aviso para você.')}</div></div>
+  </div>
+  <div class="panel" style="margin-top:16px"><h2>O que você enviou</h2><div class="stack">${enviados.slice(0,10).map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag">${esc(nome(r.para_pessoa_id))}</span></div><p class="v3-muted">${esc(r.status)} · ${dtBR(r.criado_em)}${r.resposta ? ' · resposta: ' + esc(r.resposta) : ''}</p></div>`).join('') || vazio('Nada enviado ainda.')}</div></div>`;
+}
+
+// ───────── CONFIGURAÇÕES ─────────
+function vConfig() {
+  const a = D.acessos || {}; const c = ctx.contexto || {};
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Configurações', 'Gerencie os dados da empresa, usuários e acessos.') + `
+  <div class="grid two"><div class="panel"><h2>Empresa</h2>${campo('e-nome','Nome', ctx.empresa.nome)}${campo('e-seg','Segmento', c.publico?.segmento || c.segmento || '')}${campo('e-loc','Localização', c.publico?.localizacao || c.localizacao || '')}<button class="btn" onclick="salvarEmpresa()">Salvar empresa</button></div>
+  <div class="panel"><h2>Permissões</h2><p class="hint">Cada pessoa vê e edita somente o que o perfil permite. O servidor aplica as regras: o painel e a Clara seguem as mesmas permissões.</p><div class="stack"><div class="item"><b>Proprietária</b><p>Vê e aprova tudo, gerencia a equipe.</p></div><div class="item"><b>Gestor</b><p>Coordena processos, rotinas, indicadores e crescimento; aprova processos.</p></div><div class="item"><b>Funcionário</b><p>Executa e atualiza tarefas e rotinas; sugere processos (a gestão aprova).</p></div></div></div></div>
+  <div class="panel" style="margin-top:16px"><div class="flex"><h2>Usuários e equipe</h2><button class="btn" onclick="formConvite()">+ Dar acesso</button></div>
+   <div class="tablewrap"><table><tr><th>Pessoa</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr>${(a.acessos || []).map(x => `<tr><td><b>${esc(x.nome || '—')}</b></td><td>${esc(x.email)}</td><td>${esc(x.perfil)}</td><td>${x.ativo ? '<span class="tag ok">ativo</span>' : '<span class="tag gray">desativado</span>'}</td><td>${x.usuario_id !== ctx.eu.usuario_id && x.perfil !== 'proprietario' ? `<button class="btn light sm" onclick="alternarAcesso('${x.usuario_id}',${!x.ativo})">${x.ativo ? 'Desativar' : 'Reativar'}</button>` : ''}</td></tr>`).join('')}</table></div>
+   ${(a.convites_pendentes || []).length ? `<h3 style="margin-top:18px">Convites pendentes</h3>${a.convites_pendentes.map(x => `<p class="v3-muted">${esc(x.email)} · ${esc(x.perfil)} · ${esc(nome(x.pessoa_id))} — <a href="#" onclick="formConvite('${esc(x.pessoa_id || '')}','${esc(x.email)}','${esc(x.perfil)}');return false">gerar novo link</a></p>`).join('')}` : ''}
+   ${(a.pessoas_sem_acesso || []).length ? `<h3 style="margin-top:18px">Pessoas do mapeamento ainda sem acesso</h3><div class="flexwrap">${a.pessoas_sem_acesso.map(x => `<button class="btn light sm" onclick="formConvite('${esc(x.pessoa_id)}')">${esc(x.nome)} · dar acesso</button>`).join('')}</div>` : ''}</div>`;
+}
+async function salvarEmpresa() {
+  const { error } = await sb.rpc('clara_empresa_atualizar', { p_empresa: E, p_nome: val('e-nome'), p_contexto: { publico: { ...(ctx.contexto?.publico || {}), segmento: val('e-seg') || null, localizacao: val('e-loc') || null } } });
+  if (error) return toast(traduz(error)); toast('Dados da empresa salvos.'); await iniciar(E);
+}
+async function alternarAcesso(u, ativo) {
+  if (!ativo && !confirmar('Desativar este acesso? A pessoa deixa de ver a empresa imediatamente.')) return;
+  const { error } = await sb.rpc('clara_acesso_atualizar', { p_empresa: E, p_usuario: u, p_perfil: null, p_permissoes: null, p_ativo: ativo, p_expira_em: null });
+  if (error) return toast(traduz(error)); toast(ativo ? 'Acesso reativado.' : 'Acesso desativado.'); await carregar(); render();
+}
+function formConvite(pessoa = '', email = '', perfil = 'funcionario') {
+  abrirModal(`<h2>Dar acesso à Clara</h2><p class="v3-muted">Gero um link pessoal para você enviar (por exemplo, pelo WhatsApp). Pelo link, a pessoa cria a senha e entra com o acesso certo.</p>
+   ${sel('cv-pessoa','Pessoa do mapeamento', optsPessoas(pessoa))}${campo('cv-email','E-mail da pessoa', email, 'email')}
+   ${sel('cv-perfil','Perfil', [['funcionario','Funcionário'],['gestor','Gestor'],['temporario','Temporário']].concat(ctx.eu.perfil === 'consultora' ? [['proprietario','Proprietário']] : []).map(([k,n]) => `<option value="${k}" ${perfil === k ? 'selected' : ''}>${n}</option>`).join(''))}
+   <div id="cv-res"></div><div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Fechar</button><button class="v3-btn" id="cv-btn" onclick="convidar()">Gerar link de acesso</button></div>`);
+}
+async function convidar() {
+  if (!val('cv-email')) return toast('Informe o e-mail.');
+  $('cv-btn').disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(CLARA.servidor + '/acao/convidar', { method: 'POST', headers: { authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' }, body: JSON.stringify({ empresa_id: E, email: val('cv-email'), perfil: val('cv-perfil'), pessoa_id: val('cv-pessoa') || null }) });
+    const j = await r.json(); if (!j.ok) throw Error(j.erro);
+    const pn = nome(val('cv-pessoa')) || 'tudo bem';
+    const msg = `Olá, ${pn}! Você agora tem acesso à Clara, a gerente de operações da ${ctx.empresa.nome}. Crie sua senha por este link: ${j.link_convite}`;
+    $('cv-res').innerHTML = j.link_convite ? `<div class="notice" style="margin-top:8px"><b>Link pronto.</b> ${esc(j.orientacao || '')}<div class="linkbox" style="margin-top:8px">${esc(j.link_convite)}</div><div class="row-actions" style="margin-top:8px"><button class="btn light sm" onclick="navigator.clipboard.writeText(${JSON.stringify(j.link_convite).replace(/"/g,'&quot;')});toast('Link copiado.')">Copiar link</button><a class="btn sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Enviar pelo WhatsApp</a></div></div>` : `<div class="notice">${esc(j.orientacao || 'Acesso vinculado.')}</div>`;
+    await carregar();
+  } catch (e) { toast(traduz(e), 6000); } finally { const b = $('cv-btn'); if (b) b.disabled = false; }
+}
+
+// ───────── estrutura ─────────
+const VIEWS = { hoje: vHoje, processos: vProcessos, indicadores: vIndicadores, rotinas: vRotinas, diario: vDiario, crescimento: vCrescimento, clara: vClara, config: vConfig };
+function visivel([k,, , area]) { if (area === '__gestao') return gestao(); if (area === null) return true; return pode(area); }
+function irPara(k) { aba = k; try { localStorage.setItem('clara-aba', k); } catch {} render(); window.scrollTo(0,0); }
 function render() {
-  montarAbas();
-  $('conteudo').innerHTML = `<div class="aviso">Painel de consulta. Para criar ou alterar algo, peça à Clara no Claude: tudo passa por confirmação e fica registrado. <span class="tempo">Atualizado ${esc(dataBR(new Date()))}</span></div>` + (VIEWS[abaAtual]?.() ?? '');
+  const abas = ABAS.filter(visivel); if (!abas.some(a => a[0] === aba)) aba = abas[0][0];
+  $('nav').innerHTML = abas.map(([k, ic, n]) => `<button class="${k === aba ? 'active' : ''}" onclick="irPara('${k}')">${ic}&nbsp;&nbsp; ${n}</button>`).join('');
+  $('body').innerHTML = VIEWS[aba]();
 }
-$('abas').addEventListener('click', e => { const b = e.target.closest('button[data-aba]'); if (!b) return; abaAtual = b.dataset.aba; try { localStorage.setItem('clara-aba', abaAtual); } catch {} render(); });
-
-async function abrirEmpresa(id) {
-  const { data, error } = await sb.rpc('clara_contexto', id ? { p_empresa: id } : {});
-  if (error) { $('conteudo').innerHTML = `<p class="vazio">Não foi possível abrir: ${esc(error.message)}</p>`; return; }
+async function iniciar(empresaId) {
+  const { data, error } = await sb.rpc('clara_contexto', empresaId ? { p_empresa: empresaId } : {});
+  if (error) { $('body').innerHTML = `<div class="empty">Não foi possível abrir o painel: ${esc(error.message)}</div>`; return; }
   if (data.escolher_empresa) {
-    if (!data.empresas.length) { $('conteudo').innerHTML = '<p class="vazio">Seu login ainda não está vinculado a nenhuma empresa.</p>'; return; }
-    $('sel-empresa').innerHTML = data.empresas.map(e => `<option value="${esc(e.empresa_id)}">${esc(e.nome)}</option>`).join('');
-    $('sel-empresa').hidden = false;
-    let salvo; try { salvo = localStorage.getItem('clara-empresa'); } catch {}
-    const escolha = data.empresas.find(e => e.empresa_id === salvo)?.empresa_id || data.empresas[0].empresa_id;
-    $('sel-empresa').value = escolha; return abrirEmpresa(escolha);
+    if (!data.empresas.length) { $('body').innerHTML = '<div class="empty">Seu login ainda não está vinculado a nenhuma empresa. Fale com quem enviou o seu acesso.</div>'; return; }
+    let s; try { s = localStorage.getItem('clara-empresa'); } catch {}
+    return iniciar(data.empresas.find(e => e.empresa_id === s)?.empresa_id || data.empresas[0].empresa_id);
   }
-  ctx = data; empresaId = data.empresa.id;
-  if ((data.outras_empresas || []).length) {
-    $('sel-empresa').innerHTML = data.outras_empresas.map(e => `<option value="${esc(e.empresa_id)}">${esc(e.nome)}</option>`).join('');
-    $('sel-empresa').value = empresaId; $('sel-empresa').hidden = false;
-  }
-  $('empresa-nome').textContent = data.empresa.nome;
-  $('quem').textContent = `${data.eu.pessoa?.nome || data.eu.email} · ${data.eu.perfil}`;
-  $('b-sair').hidden = false;
-  $('conteudo').innerHTML = '<p class="vazio">Carregando…</p>';
+  ctx = data; E = data.empresa.id;
+  $('top-titulo').innerHTML = `${esc(ctx.empresa.nome)} <span class="muted">/ Painel de Gestão</span>`;
+  $('top-quem').textContent = `${ctx.eu.pessoa?.nome || ctx.eu.email} · ${ctx.eu.perfil}`;
+  const outras = ctx.outras_empresas || [];
+  $('who').innerHTML = `<b>${esc(ctx.eu.pessoa?.nome || ctx.eu.email)}</b>${esc(ctx.eu.perfil)}${outras.length > 1 ? `<select onchange="try{localStorage.setItem('clara-empresa',this.value)}catch{};iniciar(this.value)">${outras.map(e => `<option value="${esc(e.empresa_id)}" ${e.empresa_id === E ? 'selected' : ''}>${esc(e.nome)}</option>`).join('')}</select>` : ''}`;
+  $('emp-foot').textContent = ctx.empresa.nome;
+  $('body').innerHTML = '<div class="loading">Carregando…</div>';
   await carregar(); render();
 }
-$('sel-empresa').addEventListener('change', e => { try { localStorage.setItem('clara-empresa', e.target.value); } catch {} abrirEmpresa(e.target.value); });
-$('b-sair').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
-
+$('b-sair').onclick = async () => { await sb.auth.signOut(); location.href = 'acesso.html'; };
 (async () => {
-  try { abaAtual = localStorage.getItem('clara-aba') || 'hoje'; } catch {}
+  try { aba = localStorage.getItem('clara-aba') || 'hoje'; } catch {}
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { $('entrar').hidden = false; return; }
-  abrirEmpresa();
+  if (!session) { location.href = 'acesso.html?voltar=painel'; return; }
+  iniciar();
 })();
 </script>
 </body>
