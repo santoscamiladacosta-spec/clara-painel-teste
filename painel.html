@@ -76,6 +76,7 @@ async function carregar() {
   const [reg, dia, mem, rec] = await Promise.all([ q('clara_registros', { colecao: true, id: true }).eq('arquivado', false), q('clara_diario', { registrado_em: false }), q('clara_memoria', { criado_em: false }), q('clara_recados', { criado_em: false }) ]);
   D = { registros: reg.data || [], diario: dia.data || [], memoria: mem.data || [], recados: rec.data || [] };
   if (aprova()) { const { data } = await sb.rpc('clara_dependencia', { p_empresa: E }); D.dep = data; }
+  { const { data } = await sb.rpc('clara_execucoes', { p_empresa: E }); D.exec = data || {}; }
   if (gestao()) { const { data } = await sb.rpc('clara_equipe_listar', { p_empresa: E }); D.acessos = data; }
 }
 
@@ -103,38 +104,246 @@ const val = id => ($(id)?.value ?? '').trim();
 const linhas = id => val(id).split('\n').map(s => s.trim()).filter(Boolean);
 
 // ───────── HOJE ─────────
-function vHoje() {
-  const h = hojeISO(), fimSemana = new Date(Date.now() + 6*864e5).toISOString().slice(0,10);
-  const tarefas = col('tarefas'), comp = col('compromissos');
-  const abertas = tarefas.filter(t => !concluida(t.status));
-  const minhas = ctx.eu.pessoa_id && !gestao() ? abertas.filter(t => t.responsavel_pessoa_id === ctx.eu.pessoa_id) : abertas;
-  const prioritarias = [...minhas].sort((a,b) => String(a.prazo||'9999').localeCompare(String(b.prazo||'9999'))).slice(0,6);
-  const meusRecados = D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status));
-  const procs = col('processos'), opsExec = col('oportunidades').filter(o => o.etapa === 'em_execucao');
-  const rotHoje = comp.filter(c => c.data === h); const rotOk = rotHoje.filter(c => concluida(c.status));
-  const dias = [...Array(7)].map((_, i) => { const d = new Date(Date.now() + i*864e5); return { iso: new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10), nome: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) }; });
-  const eventos = iso => [...comp.filter(c => c.data === iso).map(c => ({ t: (c.hora ? c.hora + ' · ' : '') + c.titulo, ok: concluida(c.status) })), ...abertas.filter(t => t.prazo === iso).map(t => ({ t: 'Prazo: ' + t.titulo, ok: false }))];
-  const pontos = col('pontos_abertos');
-  const dep = D.dep;
-  return cab(`VISÃO EXECUTIVA · ${esc(ctx.empresa.nome.toUpperCase())}`, 'Hoje, na sua operação', 'Um panorama para identificar prioridades, compromissos e decisões.', pode('rotinas','criar') ? `<button class="btn" onclick="formTarefa()">+ Nova tarefa</button><button class="btn light" onclick="formCompromisso()">+ Compromisso</button>` : '') + `
-  <div class="grid four">
-    <div class="panel stat"><div class="label">Pendências</div><div class="value">${minhas.length}</div><div class="hint">${minhas.filter(t => t.prazo && t.prazo < h).length} vencida(s)</div></div>
-    <div class="panel stat"><div class="label">Processos</div><div class="value">${procs.length}</div><div class="hint">${procs.filter(p => p.status_doc === 'publicado').length} no Manual Vivo · ${procs.filter(p => p.status_doc === 'validacao').length} aguardando aprovação</div></div>
-    <div class="panel stat"><div class="label">Compromissos de hoje</div><div class="value">${rotOk.length} / ${rotHoje.length}</div><div class="hint">concluídos</div></div>
-    <div class="panel stat"><div class="label">Oportunidades em execução</div><div class="value">${opsExec.length}</div><div class="hint">iniciativas em curso</div></div>
-  </div>
-  <div class="grid two" style="margin-top:16px">
-    <div class="panel"><div class="flex"><h2>Agenda operacional</h2><button class="btn light sm" onclick="irPara('rotinas')">Abrir rotinas →</button></div>
-      <div class="v3-calendar">${dias.map(d => `<div class="v3-day" style="min-height:110px"><b style="font-size:12px">${esc(d.nome)}</b>${eventos(d.iso).map(ev => `<div class="v3-event ${ev.ok ? 'done' : ''}">${esc(ev.t)}</div>`).join('')}</div>`).join('')}</div></div>
-    <div class="panel"><div class="eyebrow" style="color:#c8a23a">ATENÇÃO DA GESTÃO</div><h2>Pendências prioritárias</h2>
-      <div class="stack">${meusRecados.map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag ${r.prioridade === 'alta' || r.prioridade === 'urgente' ? 'red' : 'blue'}">${esc(r.tipo)}</span></div><p>${esc(r.mensagem)}</p><div class="row-actions"><button class="btn light sm" onclick="recadoStatus('${r.id}','concluido')">Concluir</button><button class="btn light sm" onclick="recadoStatus('${r.id}','visto')">Marcar como visto</button></div></div>`).join('')}
-      ${prioritarias.map(t => cardTarefa(t)).join('') || (meusRecados.length ? '' : vazio('Nenhuma pendência registrada.'))}</div></div>
-  </div>
-  <div class="grid two" style="margin-top:16px">
-    ${aprova() && dep ? `<div class="panel"><div class="eyebrow">INDICADOR ESTRATÉGICO · PROPRIETÁRIA</div><div class="flex" style="align-items:center;margin-top:8px">${depRing(dep.nota, dep.faixa)}<div style="flex:1"><h2 style="margin-bottom:6px">Nota de Dependência</h2><p class="hint">${dep.nota == null ? 'Ainda não mensurada.' : `Faixa ${esc(dep.faixa)} · ${dep.processos_avaliados} de ${dep.processos_inventariados} processos avaliados${dep.status === 'parcial' ? ' (cobertura parcial)' : ''}.`} Quanto menor, menos a empresa depende de uma pessoa só. Publicar processos no Manual Vivo reduz a nota.</p><button class="btn light sm" onclick="irPara('indicadores')">Ver evolução →</button></div></div></div>` : ''}
-    <div class="panel"><h2>Pontos em aberto</h2><div class="stack">${pontos.map(p => `<div class="item"><div class="flex"><h4>${esc(p.titulo || p.nome)}</h4>${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}</div>${p.detalhe ? `<p>${esc(p.detalhe)}</p>` : ''}</div>`).join('') || vazio('Nenhum ponto em aberto.')}</div></div>
+function vHoje() { return gestao() ? vHojeDono() : aprova() ? vHojeGestor() : vHojeEquipe(); }
+
+const saudacaoHora = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
+const dataLonga = () => new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+const saudar = sub => `<div class="ch-saud"><h1>${saudacaoHora()}, ${esc((ctx.eu.pessoa?.nome || ctx.eu.email || '').split(' ')[0])}.</h1><p>${esc(dataLonga())}${sub ? ' · ' + esc(sub) : ''}</p></div>`;
+const secao = (titulo, dir = '') => `<div class="ch-secao"><h3>${titulo}</h3><span>${dir}</span></div>`;
+const minhasAbertas = () => col('tarefas').filter(t => !concluida(t.status) && t.responsavel_pessoa_id === ctx.eu.pessoa_id);
+const recadosMeus = () => D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status));
+const publicados = () => col('processos').filter(p => p.status_doc === 'publicado');
+const meusProcessos = () => { const m = publicados().filter(p => p.responsavel_pessoa_id === ctx.eu.pessoa_id || p.substituto_pessoa_id === ctx.eu.pessoa_id); return m.length ? m : publicados(); };
+const semSubstituto = () => col('processos').filter(p => !p.substituto_pessoa_id && !p.substituto);
+const aguardandoAprovacao = () => col('processos').filter(p => p.status_doc === 'validacao');
+const impedidas = () => col('tarefas').filter(t => t.status === 'impedida');
+
+// ───────── HOJE · quem executa (celular primeiro) ─────────
+function vHojeEquipe() {
+  const tarefas = minhasAbertas(), recs = recadosMeus(), procs = meusProcessos();
+  const meusInd = col('indicadores').filter(i => i.responsavel_pessoa_id === ctx.eu.pessoa_id);
+  return `<div class="ch-col">
+    ${saudar(ctx.eu.pessoa?.funcao || '')}
+    ${secao('Seu dia', tarefas.length ? (tarefas.length === 1 ? '1 aberta' : tarefas.length + ' abertas') : 'tudo em dia')}
+    ${tarefas.length ? tarefas.map(cardTarefaEquipe).join('') : `<div class="ch-card ch-vazio">Nada no seu nome agora. Se travar em alguma coisa, avise a gestão pela Clara ou pelo processo abaixo.</div>`}
+    ${recs.length ? secao('Recados') + recs.map(cardRecadoEquipe).join('') : ''}
+    ${secao('Como se faz', procs.length ? procs.length + (procs.length === 1 ? ' processo' : ' processos') : '')}
+    ${procs.length ? procs.map(accProcesso).join('') : `<div class="ch-card ch-vazio">Nenhum processo publicado ainda. Assim que a gestão publicar no Manual Vivo, o passo a passo aparece aqui.</div>`}
+    ${meusInd.length ? secao('Para lançar') + meusInd.map(cardMedicao).join('') : ''}
   </div>`;
 }
+
+function cardTarefaEquipe(t) {
+  const h = hojeISO();
+  const chip = !t.prazo ? '' : t.prazo < h ? `<span class="tag red">Venceu ${dBR(t.prazo)}</span>` : t.prazo === h ? '<span class="tag warn">Hoje</span>' : `<span class="tag">${dBR(t.prazo)}</span>`;
+  const proc = t.processo_id ? col('processos').find(p => p.id === t.processo_id) : null;
+  return `<article class="ch-card ch-alvo">
+    <h4>${esc(t.titulo || t.nome)}</h4>
+    ${proc ? `<p class="ch-de">Do processo ${esc(proc.nome)}</p>` : ''}
+    <div class="ch-linha">${chip}${t.descricao ? `<span class="tag">Pronto quando: ${esc(t.descricao)}</span>` : ''}</div>
+    <div class="ch-acoes"><button class="ch-btn" onclick="concluirRapido('${esc(t.id)}')">Concluí</button><button class="ch-btn sec" onclick="travarTarefa('${esc(t.id)}')">Travei</button></div>
+  </article>`;
+}
+
+function cardRecadoEquipe(r) {
+  return `<article class="ch-card">
+    <h4>${esc(r.assunto)}</h4>
+    <p class="ch-de">${esc(r.de || 'Da gestão')}${r.prioridade === 'alta' || r.prioridade === 'urgente' ? ' · prioridade alta' : ''}</p>
+    ${r.mensagem ? `<p class="ch-msg">${esc(r.mensagem)}</p>` : ''}
+    <div class="ch-acoes"><button class="ch-btn sec" onclick="recadoStatus('${r.id}','concluido')">Entendi</button></div>
+  </article>`;
+}
+
+function cardMedicao(i) {
+  return `<article class="ch-card">
+    <h4>${esc(i.nome)}</h4>
+    <p class="ch-de">${esc(i.unidade || '')}${i.meta ? ' · meta ' + esc(String(i.meta)) : ''}</p>
+    <div class="ch-acoes"><button class="ch-btn sec" onclick="formMedicao('${esc(i.id)}')">Lançar medição</button></div>
+  </article>`;
+}
+
+async function concluirRapido(id) {
+  const t = col('tarefas').find(x => x.id === id); if (!t) return;
+  await editar(t, { status: 'concluida', concluida_em: new Date().toISOString() }, 'Concluída pelo painel');
+}
+
+function travarTarefa(id) {
+  const t = col('tarefas').find(x => x.id === id);
+  abrirModal(`<h2>O que está impedindo?</h2><p class="v3-muted">${esc(t.titulo || '')}</p>
+    ${campo('f-imp', 'Escreva em uma linha', '', 'textarea')}
+    <p class="v3-muted">A tarefa fica em aberto, marcada como impedida, e a gestão vê isso na tela dela.</p>
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarTrava('${esc(id)}')">Registrar impedimento</button></div>`);
+}
+
+async function salvarTrava(id) {
+  const motivo = val('f-imp'); if (!motivo) return toast('Escreva o que está impedindo.');
+  const t = col('tarefas').find(x => x.id === id);
+  const r = await editar(t, { status: 'impedida', impedimento: motivo, impedida_em: new Date().toISOString() }, 'Impedimento registrado pelo painel');
+  if (!r) return;
+  const proc = t.processo_id ? col('processos').find(p => p.id === t.processo_id) : null;
+  const destino = proc && proc.responsavel_pessoa_id && proc.responsavel_pessoa_id !== ctx.eu.pessoa_id ? proc.responsavel_pessoa_id : null;
+  if (destino) {
+    const { error } = await sb.rpc('clara_recado_enviar', { p_empresa: E, p_para_pessoa_id: destino, p_tipo: 'alerta', p_assunto: 'Impedimento em: ' + (t.titulo || ''), p_mensagem: motivo, p_prioridade: 'alta', p_prazo: null, p_chave: 'imp-' + id + '-' + Date.now() });
+    if (!error) toast(nome(destino) + ' foi avisado.');
+  }
+}
+
+// ───────── Manual Vivo em modo execução ─────────
+function accProcesso(p) {
+  const etapas = Array.isArray(p.etapas) ? p.etapas : [];
+  const info = (D.exec || {})[p.id] || {};
+  const ab = info.minha_aberta || null;
+  const marcados = ab && ab.passos ? ab.passos : {};
+  const feitos = Object.values(marcados).filter(Boolean).length;
+  const total = etapas.length;
+  const pct = total ? Math.round(feitos / total * 100) : 0;
+  const excecoes = [].concat(p.excecoes || p.excecao || []).filter(Boolean);
+  const pessoas = info.pessoas || 0;
+  return `<details class="ch-proc" data-proc="${esc(p.id)}">
+    <summary>
+      <span class="ch-pid">${esc((p.id || '').replace(/^proc-/, '').split('-')[0].toUpperCase())}</span>
+      <span class="ch-ptit"><b>${esc(p.nome)}</b><small>${total} ${total === 1 ? 'passo' : 'passos'}${pessoas > 1 ? ' · ' + pessoas + ' pessoas já executaram' : ''}</small></span>
+      <span class="ch-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="ch-pcorpo">
+      <div class="ch-pmeta">${p.responsavel_pessoa_id ? `<span class="tag">Responsável: ${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}${p.substituto_pessoa_id || p.substituto ? `<span class="tag">Substituto: ${esc(nome(p.substituto_pessoa_id) || p.substituto)}</span>` : '<span class="tag warn">Sem substituto</span>'}</div>
+      ${total ? `<ul class="ch-passos">${etapas.map((e, idx) => `<li><label class="ch-passo"><input type="checkbox" ${marcados[idx] ? 'checked' : ''} onchange="marcarPasso('${esc(p.id)}',${idx},this.checked,${total},this)"><span class="ch-txt">${esc(typeof e === 'string' ? e : (e.titulo || e.etapa || ''))}</span></label></li>`).join('')}</ul>` : `<div class="ch-vazio">Este processo ainda não tem o passo a passo escrito.</div>`}
+      ${excecoes.map(x => `<div class="ch-exc"><b>Se sair do normal</b>${esc(typeof x === 'string' ? x : JSON.stringify(x))}</div>`).join('')}
+      ${p.decisao_proprietaria ? `<div class="ch-exc"><b>Quem decide</b>${esc(p.decisao_proprietaria)}</div>` : ''}
+      <div class="ch-barra"><span style="width:${pct}%"></span></div>
+      <p class="ch-prog ex-txt">${feitos ? `${feitos} de ${total} passos · ${pct}%` : 'Nenhum passo concluído'}</p>
+      <div class="ch-acoes" style="flex-wrap:wrap">
+        <button class="ch-btn ex-fim" ${total && feitos === total ? '' : 'disabled'} onclick="concluirExecucao('${esc(p.id)}')">Concluir execução</button>
+        <button class="ch-btn sec" onclick="sugerirMelhoria('${esc(p.id)}')">Sugerir melhoria</button>
+      </div>
+    </div>
+  </details>`;
+}
+
+async function marcarPasso(proc, idx, feito, total, el) {
+  let ex = ((D.exec || {})[proc] || {}).minha_aberta;
+  if (!ex) {
+    const { data, error } = await sb.rpc('clara_execucao_abrir', { p_empresa: E, p_processo: proc, p_total: total });
+    if (error) { el.checked = !feito; return toast(traduz(error)); }
+    ex = data; D.exec = D.exec || {}; D.exec[proc] = { ...(D.exec[proc] || {}), minha_aberta: ex };
+  }
+  const { data, error } = await sb.rpc('clara_execucao_passo', { p_empresa: E, p_execucao: ex.id, p_indice: idx, p_feito: feito });
+  if (error) { el.checked = !feito; return toast(traduz(error)); }
+  D.exec[proc].minha_aberta = data;
+  pintarProgresso(proc, data.concluidos, total);
+}
+
+function pintarProgresso(proc, feitos, total) {
+  const el = document.querySelector(`[data-proc="${proc}"]`); if (!el) return;
+  const pct = total ? Math.round(feitos / total * 100) : 0;
+  el.querySelector('.ch-barra span').style.width = pct + '%';
+  el.querySelector('.ex-txt').textContent = feitos ? `${feitos} de ${total} passos · ${pct}%` : 'Nenhum passo concluído';
+  el.querySelector('.ex-fim').disabled = !(total && feitos === total);
+}
+
+async function concluirExecucao(proc) {
+  const ex = ((D.exec || {})[proc] || {}).minha_aberta;
+  if (!ex) return toast('Marque os passos antes de concluir.');
+  const { error } = await sb.rpc('clara_execucao_concluir', { p_empresa: E, p_execucao: ex.id, p_observacao: null });
+  if (error) return toast(traduz(error));
+  toast('Execução registrada. A gestão vê no Diário de Bordo.');
+  await carregar(); render();
+}
+
+function sugerirMelhoria(proc) {
+  const p = col('processos').find(x => x.id === proc);
+  abrirModal(`<h2>Sugerir melhoria</h2><p class="v3-muted">${esc(p.nome)}</p>
+    ${campo('f-sug', 'O que você mudaria, e por quê', '', 'textarea')}
+    <p class="v3-muted">Sua sugestão vai para a gestão como oportunidade de melhoria. O processo publicado não muda até alguém aprovar.</p>
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarSugestao('${esc(proc)}')">Enviar</button></div>`);
+}
+
+function salvarSugestao(proc) {
+  const txt = val('f-sug'); if (!txt) return toast('Escreva a sua sugestão.');
+  const p = col('processos').find(x => x.id === proc);
+  return criar('oportunidades', { id: 'op-' + slug(p.nome + '-' + Date.now().toString(36)), titulo: 'Melhoria em ' + p.nome, tipo: 'melhoria', origem: 'sugestao_equipe', processo_id: proc, detalhe: txt, etapa: 'identificada', responsavel_pessoa_id: p.responsavel_pessoa_id || null }, 'Sugestão de melhoria enviada pelo painel');
+}
+
+// ───────── HOJE · gestor ─────────
+function vHojeGestor() {
+  const minhas = minhasAbertas(), travadas = impedidas(), aprovar = aguardandoAprovacao();
+  const equipe = col('tarefas').filter(t => !concluida(t.status) && t.responsavel_pessoa_id && t.responsavel_pessoa_id !== ctx.eu.pessoa_id);
+  return `<div class="ch-col ch-larga">
+    ${saudar(ctx.eu.pessoa?.funcao || 'gestão')}
+    ${travadas.length ? secao('Impedimentos da equipe', 'resolva primeiro') + travadas.map(cardImpedimento).join('') : ''}
+    ${aprovar.length ? secao('Esperando a sua aprovação') + aprovar.map(p => `<article class="ch-card ch-alvo"><h4>${esc(p.nome)}</h4><p class="ch-de">Processo revisado, pronto para entrar no Manual Vivo</p><div class="ch-acoes"><button class="ch-btn" onclick="verProcesso('${esc(p.id)}')">Revisar e publicar</button></div></article>`).join('') : ''}
+    ${secao('Suas tarefas', minhas.length ? minhas.length + ' abertas' : 'tudo em dia')}
+    ${minhas.length ? minhas.map(cardTarefaEquipe).join('') : '<div class="ch-card ch-vazio">Nada no seu nome agora.</div>'}
+    ${secao('Da sua equipe', equipe.length ? equipe.length + ' abertas' : '')}
+    ${equipe.length ? equipe.map(t => `<article class="ch-card"><h4>${esc(t.titulo || t.nome)}</h4><p class="ch-de">${esc(nome(t.responsavel_pessoa_id))}</p><div class="ch-linha">${tagPrazo(t.prazo, t.status)}</div></article>`).join('') : '<div class="ch-card ch-vazio">Ninguém com tarefa aberta.</div>'}
+    ${secao('Como se faz')}
+    ${meusProcessos().map(accProcesso).join('') || '<div class="ch-card ch-vazio">Nenhum processo publicado ainda.</div>'}
+  </div>`;
+}
+
+function cardImpedimento(t) {
+  return `<article class="ch-card ch-trava">
+    <h4>${esc(t.titulo || t.nome)}</h4>
+    <p class="ch-de">${esc(nome(t.responsavel_pessoa_id) || 'Alguém da equipe')} travou${t.impedida_em ? ' · ' + dtBR(t.impedida_em) : ''}</p>
+    ${t.impedimento ? `<p class="ch-msg">${esc(t.impedimento)}</p>` : ''}
+    <div class="ch-acoes"><button class="ch-btn" onclick="formTarefa('${esc(t.id)}')">Resolver</button></div>
+  </article>`;
+}
+
+// ───────── HOJE · proprietária ─────────
+function vHojeDono() {
+  const dep = D.dep, pontos = col('pontos_abertos'), aprovar = aguardandoAprovacao();
+  const travadas = impedidas(), criticos = semSubstituto().filter(p => p.critico), ind = col('indicadores').slice(0, 4);
+  const diario = D.diario.slice(0, 4);
+  const h = hojeISO();
+  const vencidas = col('tarefas').filter(t => !concluida(t.status) && t.prazo && t.prazo < h);
+  return `${saudar(ctx.empresa.nome)}
+  <div class="ch-grid">
+    <article class="ch-card full">
+      <h3>Nota de Dependência</h3><p class="ch-desc">O quanto a operação depende de você e de pessoas específicas.</p>
+      <div class="ch-dep">${depRing(dep?.nota ?? null, dep?.faixa)}
+        <div class="ch-deptxt">
+          ${dep?.nota == null ? '<p>Ainda não mensurada. A consultoria registra os fatores na instalação.</p>' : `<p class="ch-faixa">Faixa ${esc(dep.faixa)}</p><p>${dep.processos_avaliados} de ${dep.processos_inventariados} processos avaliados${dep.status === 'parcial' ? ', cobertura parcial' : ''}.</p>`}
+          <p>Ela cai quando um processo é publicado no Manual Vivo e quando uma segunda pessoa passa a executá-lo.</p>
+          <button class="ch-btn sec" onclick="irPara('processos')">Ver os processos →</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="ch-card">
+      <h3>Espera decisão sua</h3><p class="ch-desc">Nada anda enquanto você não responde.</p>
+      <ul class="ch-lista">
+        ${aprovar.map(p => `<li onclick="verProcesso('${esc(p.id)}')" class="click"><span><b>${esc(p.nome)}</b><small>Revisado, aguardando publicação</small></span><span class="tag warn">Aprovar</span></li>`).join('')}
+        ${pontos.map(p => `<li><span><b>${esc(p.titulo || p.nome)}</b><small>${esc(p.detalhe || 'Ponto em aberto do mapeamento')}</small></span>${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : '<span class="tag gray">Sem dono</span>'}</li>`).join('')}
+        ${aprovar.length || pontos.length ? '' : '<li><span class="muted">Nada parado esperando você.</span></li>'}
+      </ul>
+    </article>
+
+    <article class="ch-card">
+      <h3>Processos sem substituto</h3><p class="ch-desc">Uma pessoa só sabe executar.</p>
+      <ul class="ch-lista">
+        ${criticos.map(p => `<li onclick="verProcesso('${esc(p.id)}')" class="click"><span><b>${esc(p.nome)}</b><small>${esc(nome(p.responsavel_pessoa_id) || 'sem responsável definido')}</small></span><span class="tag red">Crítico</span></li>`).join('') || '<li><span class="muted">Nenhum processo crítico sem substituto.</span></li>'}
+      </ul>
+    </article>
+
+    ${travadas.length ? `<article class="ch-card"><h3>Impedimentos da equipe</h3><p class="ch-desc">Alguém parou e precisa de uma saída.</p><ul class="ch-lista">${travadas.map(t => `<li><span><b>${esc(t.titulo || t.nome)}</b><small>${esc(nome(t.responsavel_pessoa_id) || '')}${t.impedimento ? ' · ' + esc(t.impedimento) : ''}</small></span><span class="tag red">Travada</span></li>`).join('')}</ul></article>` : ''}
+
+    <article class="ch-card">
+      <h3>Indicadores</h3><p class="ch-desc">${vencidas.length ? vencidas.length + ' tarefa(s) vencida(s) na operação.' : 'O que você acompanha.'}</p>
+      <ul class="ch-lista">
+        ${ind.map(i => `<li><span><b>${esc(i.nome)}</b><small>${i.meta ? 'Meta: ' + esc(String(i.meta)) : 'Sem meta definida'}</small></span><span class="tag">${esc(String(i.ultimo_valor ?? '—'))}${i.unidade ? ' ' + esc(i.unidade) : ''}</span></li>`).join('') || '<li><span class="muted">Nenhum indicador cadastrado.</span></li>'}
+      </ul>
+    </article>
+
+    <article class="ch-card">
+      <h3>Diário de bordo</h3><p class="ch-desc">O que ficou registrado, boa parte sem ninguém escrever.</p>
+      <ul class="ch-lista">
+        ${diario.map(d => `<li><span><b>${esc(d.assunto)}</b><small>${dtBR(d.registrado_em)}</small></span></li>`).join('') || '<li><span class="muted">Ainda sem registros.</span></li>'}
+      </ul>
+    </article>
+  </div>`;
+}
+
 function cardTarefa(t) {
   const meu = t.responsavel_pessoa_id === ctx.eu.pessoa_id;
   return `<div class="item"><div class="flex"><h4 class="${concluida(t.status) ? 'list-done' : ''}">${esc(t.titulo || t.nome)}</h4>${tagPrazo(t.prazo, t.status)}</div>
@@ -404,11 +613,15 @@ async function convidar() {
 
 // ───────── estrutura ─────────
 const VIEWS = { hoje: vHoje, processos: vProcessos, indicadores: vIndicadores, rotinas: vRotinas, diario: vDiario, crescimento: vCrescimento, clara: vClara, config: vConfig };
-function visivel([k,, , area]) { if (area === '__gestao') return gestao(); if (area === null) return true; return pode(area); }
+function visivel([k,, , area]) {
+  // Quem executa vive em três abas: o dia, como se faz e o próprio acesso.
+  if (!aprova() && ['indicadores','rotinas','diario','crescimento'].includes(k)) return false;
+  if (area === '__gestao') return gestao(); if (area === null) return true; return pode(area);
+}
 function irPara(k) { aba = k; try { localStorage.setItem('clara-aba', k); } catch {} render(); window.scrollTo(0,0); }
 function render() {
   const abas = ABAS.filter(visivel); if (!abas.some(a => a[0] === aba)) aba = abas[0][0];
-  $('nav').innerHTML = abas.map(([k, ic, n]) => `<button class="${k === aba ? 'active' : ''}" onclick="irPara('${k}')">${ic}&nbsp;&nbsp; ${n}</button>`).join('');
+  $('nav').innerHTML = abas.map(([k, ic, n]) => `<button class="${k === aba ? 'active' : ''}" onclick="irPara('${k}')">${ic}&nbsp;&nbsp; ${k === 'processos' && !aprova() ? 'COMO SE FAZ' : n}</button>`).join('');
   $('body').innerHTML = VIEWS[aba]();
 }
 async function iniciar(empresaId) {
