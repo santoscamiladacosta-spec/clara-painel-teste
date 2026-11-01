@@ -430,6 +430,18 @@ function exportarManual() {
 }
 
 // ───────── INDICADORES ─────────
+const DIAS_FREQ = { diaria: 1, diária: 1, semanal: 7, quinzenal: 15, mensal: 30, bimestral: 60, trimestral: 90, semestral: 180, anual: 365 };
+const prazoFreq = i => DIAS_FREQ[String(i.frequencia || '').trim().toLowerCase()] || null;
+const ultimaMedicao = i => { const m = i.medicoes || []; return m.length ? m[m.length - 1].data : null; };
+function atrasoIndicador(i) {
+  const dias = prazoFreq(i); if (!dias) return null;
+  const u = ultimaMedicao(i);
+  if (!u) return { dias: null, texto: 'Nunca medido' };
+  const passados = Math.floor((Date.now() - new Date(u + 'T12:00:00')) / 864e5);
+  return passados > dias ? { dias: passados, texto: `Medido há ${passados} dias, e a frequência é ${esc(i.frequencia)}` } : null;
+}
+const indicadorIncompleto = i => !i.responsavel_pessoa_id ? 'Sem quem lança' : !i.frequencia ? 'Sem frequência' : !i.processo_id ? 'Sem processo' : null;
+
 function vIndicadores() {
   const inds = col('indicadores'); const dep = D.dep;
   const medidos = inds.filter(i => typeof i.ultimo_valor === 'number');
@@ -440,11 +452,20 @@ function vIndicadores() {
     <div><h3>Evolução mensal</h3><div class="hist">${(dep.historico || []).map(h => `<div style="height:${Math.max(4, h.nota || 0)}%"><b>${h.nota ?? '—'}</b><small>${esc(h.mes.slice(5))}/${esc(h.mes.slice(2,4))}</small></div>`).join('')}</div></div></div>
     <h3 style="margin-top:28px">Por processo</h3><div class="stack">${(dep.processos || []).map(p => `<div class="flex item"><span>${esc(p.nome)}</span><span class="flexwrap">${p.publicado ? '<span class="tag ok">Manual Vivo</span>' : ''}${tagFaixa(p.faixa)}<b>${p.nota ?? '—'}</b></span></div>`).join('')}</div>
     <p class="hint" style="margin-top:12px">O que reduz a nota: documentar e publicar os processos no Manual Vivo, preparar substitutos e delegar decisões.</p></div>` : ''}
+  ${(() => {
+    const atrasados = inds.map(i => ({ i, a: atrasoIndicador(i) })).filter(x => x.a);
+    const semInd = col('processos').filter(p => p.critico && !inds.some(i => i.processo_id === p.id));
+    if (!atrasados.length && !semInd.length) return '';
+    return `<div class="grid two" style="margin-top:16px">
+      ${atrasados.length ? `<div class="panel"><h2>Para medir agora</h2><p class="hint" style="margin:-10px 0 14px">O indicador que ninguém mede deixa de ser indicador.</p><div class="stack">${atrasados.map(({ i, a }) => `<div class="item"><div class="flex"><h4>${esc(i.nome)}</h4><span class="tag warn">${esc(a.texto)}</span></div><p>${esc(nome(i.responsavel_pessoa_id) || 'Sem responsável definido')}</p><div class="row-actions"><button class="btn sm" onclick="formMedicao('${esc(i.id)}')">Lançar medição</button></div></div>`).join('')}</div></div>` : ''}
+      ${semInd.length ? `<div class="panel"><h2>Processo crítico sem indicador</h2><p class="hint" style="margin:-10px 0 14px">A promessa é um indicador por processo crítico.</p><div class="stack">${semInd.map(p => `<div class="item"><div class="flex"><h4>${esc(p.nome)}</h4><span class="tag red">sem medição</span></div>${pode('indicadores','criar') ? `<div class="row-actions"><button class="btn light sm" onclick="formIndicador('', '${esc(p.id)}')">Criar indicador deste processo</button></div>` : ''}</div>`).join('')}</div></div>` : ''}
+    </div>`;
+  })()}
   <div class="panel" style="margin-top:16px"><h2>Indicadores cadastrados</h2><div class="tablewrap"><table><tr><th>Indicador</th><th>Valor atual</th><th>Meta</th><th>Responsável</th><th>Situação</th><th></th></tr>
-  ${inds.map(i => `<tr><td><b>${esc(i.nome)}</b><br><span class="muted">${esc(i.definicao || '')}</span></td><td><b>${i.ultimo_valor ?? '—'}</b> ${esc(i.unidade || '')}</td><td>${esc(i.meta || '—')}</td><td>${esc(nome(i.responsavel_pessoa_id) || i.responsavel || '—')}</td><td>${esc(i.situacao || i.status || '')}</td><td class="row-actions">${pode('indicadores','editar') ? `<button class="btn light sm" onclick="formMedicao('${esc(i.id)}')">+ Medição</button><button class="btn light sm" onclick="formIndicador('${esc(i.id)}')">Editar</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="6">${vazio('Nenhum indicador cadastrado.')}</td></tr>`}</table></div></div>`;
+  ${inds.map(i => `<tr><td><b>${esc(i.nome)}</b><br><span class="muted">${esc(i.definicao || '')}</span></td><td><b>${i.ultimo_valor ?? '—'}</b> ${esc(i.unidade || '')}</td><td>${esc(i.meta || '—')}</td><td>${esc(nome(i.responsavel_pessoa_id) || i.responsavel || '—')}</td><td>${esc(i.situacao || i.status || '')}${indicadorIncompleto(i) ? `<br><span class="tag warn">${esc(indicadorIncompleto(i))}</span>` : ''}</td><td class="row-actions">${pode('indicadores','editar') ? `<button class="btn light sm" onclick="formMedicao('${esc(i.id)}')">+ Medição</button><button class="btn light sm" onclick="formIndicador('${esc(i.id)}')">Editar</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="6">${vazio('Nenhum indicador cadastrado.')}</td></tr>`}</table></div></div>`;
 }
-function formIndicador(id) {
-  const i = id ? col('indicadores').find(x => x.id === id) : {};
+function formIndicador(id, processoSugerido) {
+  const i = id ? col('indicadores').find(x => x.id === id) : { processo_id: processoSugerido || '' };
   abrirModal(`<h2>${id ? 'Editar indicador' : 'Novo indicador'}</h2>${campo('i-nome','Nome', i.nome || '')}${campo('i-def','Definição / fórmula', i.definicao || '', 'textarea')}
    <div class="formrow">${campo('i-un','Unidade', i.unidade || '')}${campo('i-meta','Meta', i.meta || '')}</div>
    <div class="formrow">${campo('i-freq','Frequência', i.frequencia || '')}${campo('i-fonte','Fonte do dado', i.fonte_dado || '')}</div>
@@ -476,15 +497,27 @@ function vRotinas() {
   const base = new Date(); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + semana * 7);
   const dias = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() + i); return { iso: new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10), nome: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) }; });
   const comp = col('compromissos'), tarefas = col('tarefas'), rot = col('rotinas');
-  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Rotinas', 'Planeje compromissos por dia e semana. Pendências vencidas aparecem no Hoje.', pode('rotinas','criar') ? `<button class="btn" onclick="formCompromisso()">+ Compromisso</button><button class="btn light" onclick="formRotina()">+ Rotina recorrente</button><button class="btn light" onclick="formTarefa()">+ Tarefa</button>` : '') + `
-  <div class="panel"><div class="flex" style="margin-bottom:12px"><div class="flexwrap"><button class="btn light sm" onclick="semana--;render()">←</button><button class="btn light sm" onclick="semana=0;render()">Hoje</button><button class="btn light sm" onclick="semana++;render()">→</button><b>${dBR(dias[0].iso)} — ${dBR(dias[6].iso)}</b></div></div>
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Rotinas', 'A cadência que mantém a operação de pé: o que se repete, quem conduz e o que isso gera.', pode('rotinas','criar') ? `<button class="btn" onclick="formCompromisso()">+ Compromisso</button><button class="btn light" onclick="formRotina()">+ Rotina recorrente</button><button class="btn light" onclick="formTarefa()">+ Tarefa</button>` : '') + `
+  <div class="panel"><div class="flex"><h2>Cadência</h2>${pode('rotinas','criar') ? `<button class="btn light sm" onclick="formRotina()">+ Nova rotina</button>` : ''}</div>
+    <p class="hint" style="margin:-10px 0 14px">Cada rotina vira tarefa quando chega a hora. Empresa sem cadência combina tudo no corredor e esquece metade.</p>
+    <div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || 'sem frequência')}</span></div>
+      <p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || 'Sem responsável')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p>
+      ${pode('rotinas','criar') ? `<div class="row-actions"><button class="btn sm" onclick="gerarTarefaRotina('${esc(r.id)}')">Gerar a tarefa de hoje</button></div>` : ''}</div>`).join('') || vazio('Nenhuma rotina definida. Comece pelo que já acontece toda semana: conferência, fechamento, reunião.')}</div></div>
+
+  <details class="clara-details" style="margin-top:16px"><summary>Ver a semana em agenda</summary><div class="clara-details-body">
+  <div class="panel" style="margin:0"><div class="flex" style="margin-bottom:12px"><div class="flexwrap"><button class="btn light sm" onclick="semana--;render()">←</button><button class="btn light sm" onclick="semana=0;render()">Hoje</button><button class="btn light sm" onclick="semana++;render()">→</button><b>${dBR(dias[0].iso)} — ${dBR(dias[6].iso)}</b></div></div>
   <div class="v3-calendar">${dias.map(d => `<div class="v3-day"><b style="font-size:12px">${esc(d.nome)}</b>
     ${comp.filter(c => c.data === d.iso).sort((a,b) => String(a.hora||'').localeCompare(String(b.hora||''))).map(c => `<div class="v3-event ${concluida(c.status) ? 'done' : ''} click" onclick="acaoCompromisso('${esc(c.id)}')">${c.hora ? `<b>${esc(c.hora)}</b> ` : ''}${esc(c.titulo)}<br><span class="v3-muted">${esc(nome(c.responsavel_pessoa_id))}</span></div>`).join('')}
     ${tarefas.filter(t => t.prazo === d.iso).map(t => `<div class="v3-event ${concluida(t.status) ? 'done' : ''}" style="border-left-color:#d78a32">Prazo: ${esc(t.titulo)}<br><span class="v3-muted">${esc(nome(t.responsavel_pessoa_id))}</span></div>`).join('')}</div>`).join('')}</div></div>
+  </div></details>
   <div class="grid two" style="margin-top:16px">
-    <div class="panel"><h2>Rotinas recorrentes</h2><div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || '')}</span></div><p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || '')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p></div>`).join('') || vazio('Nenhuma rotina recorrente registrada.')}</div></div>
+    <div class="panel" style="display:none"><div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || '')}</span></div><p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || '')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p></div>`).join('') || vazio('Nenhuma rotina recorrente registrada.')}</div></div>
     <div class="panel"><h2>Tarefas</h2><div class="stack">${tarefas.sort((a,b) => (concluida(a.status) - concluida(b.status)) || String(a.prazo||'9999').localeCompare(String(b.prazo||'9999'))).map(cardTarefa).join('') || vazio('Nenhuma tarefa.')}</div></div>
   </div>`;
+}
+function gerarTarefaRotina(id) {
+  const r = col('rotinas').find(x => x.id === id); if (!r) return;
+  return criar('tarefas', { id: 't-' + slug(r.nome || r.titulo), titulo: r.nome || r.titulo, descricao: 'Rotina ' + (r.frequencia || 'recorrente'), status: 'aberta', responsavel_pessoa_id: r.responsavel_pessoa_id || null, prazo: hojeISO(), rotina_id: id }, 'Tarefa gerada a partir da cadência');
 }
 function formCompromisso() {
   abrirModal(`<h2>Novo compromisso</h2>${campo('c-tit','Compromisso', '', 'text', 'placeholder="Ex.: Reunião com fornecedor"')}<div class="formrow">${campo('c-data','Data', hojeISO(), 'date')}${campo('c-hora','Horário', '', 'time')}</div>${sel('c-resp','Responsável', optsPessoas(ctx.eu.pessoa_id))}
@@ -520,24 +553,68 @@ async function salvarDiario() {
 }
 
 // ───────── CRESCIMENTO ─────────
+// O painel não pede inspiração: ele oferece a fila do que já encontrou.
+function sugestoesCrescimento() {
+  const ops = col('oportunidades'), jaTem = p => ops.some(o => o.processo_id === p || o.origem_id === p);
+  const s = [];
+  for (const p of col('processos')) {
+    if (p.critico && p.status_doc !== 'publicado' && !jaTem(p.id)) s.push({ id: p.id, titulo: 'Publicar ' + p.nome + ' no Manual Vivo', porque: 'Processo crítico sem passo a passo publicado. É o que mais puxa a dependência para cima.', tipo: 'melhoria', processo_id: p.id });
+    else if (p.critico && !p.substituto_pessoa_id && !p.substituto && !jaTem(p.id)) s.push({ id: p.id, titulo: 'Preparar substituto em ' + p.nome, porque: 'Uma pessoa só sabe executar um processo crítico.', tipo: 'melhoria', processo_id: p.id });
+  }
+  for (const i of col('indicadores')) {
+    const fora = i.meta !== null && i.meta !== undefined && !Number.isNaN(Number(i.meta)) && typeof i.ultimo_valor === 'number' && Number(i.ultimo_valor) !== Number(i.meta);
+    if (fora && !jaTem(i.id)) s.push({ id: i.id, titulo: 'Trazer ' + i.nome + ' para a meta', porque: `Hoje em ${i.ultimo_valor}${i.unidade ? ' ' + i.unidade : ''}, meta ${i.meta}.`, tipo: 'melhoria', processo_id: i.processo_id || null });
+  }
+  for (const p of col('pontos_abertos')) if (!p.responsavel_pessoa_id && !jaTem(p.id)) s.push({ id: p.id, titulo: 'Resolver: ' + (p.titulo || p.nome), porque: 'Ponto em aberto sem dono desde o mapeamento.', tipo: 'melhoria' });
+  return s.slice(0, 8);
+}
+
+// "Crescer sem a empresa desmoronar" tem um porteiro: os processos que a oportunidade vai exigir.
+function porteiroDependencia(idsProcessos) {
+  const alertas = [];
+  for (const id of idsProcessos || []) {
+    const p = col('processos').find(x => x.id === id); if (!p) continue;
+    if (p.status_doc !== 'publicado') alertas.push(`${p.nome} ainda não está publicado no Manual Vivo`);
+    if (!p.substituto_pessoa_id && !p.substituto) alertas.push(`${p.nome} não tem substituto preparado`);
+  }
+  return alertas;
+}
+
 function vCrescimento() {
   const ops = col('oportunidades'); const g = e => ops.filter(o => (o.etapa || 'identificada') === e);
   const card = o => `<div class="item click" onclick="formOportunidade('${esc(o.id)}')"><h4>${esc(o.titulo || o.nome)}</h4><p>${esc(o.descricao || '')}</p><div class="meta">${o.responsavel_pessoa_id ? `<span class="tag">${esc(nome(o.responsavel_pessoa_id))}</span>` : ''}${o.impacto ? `<span class="tag blue">impacto ${esc(o.impacto)}</span>` : ''}${o.prazo ? tagPrazo(o.prazo) : ''}</div></div>`;
   return `<div class="pb-hero"><div><div class="eyebrow" style="color:#c8a23a">ESTRATÉGIA E EVOLUÇÃO</div><h2>Crescimento</h2><p>Da oportunidade à execução: visualize, priorize e acompanhe cada iniciativa.</p></div>${pode('crescimento','criar') ? `<button class="btn light" onclick="formOportunidade()">+ Nova oportunidade</button>` : ''}</div>
   <div class="grid four"><div class="panel stat"><div class="label">Oportunidades mapeadas</div><div class="value">${ops.length}</div></div><div class="panel stat"><div class="label">Em execução</div><div class="value">${g('em_execucao').length}</div></div><div class="panel stat"><div class="label">Para avaliar</div><div class="value">${g('identificada').length}</div></div><div class="panel stat"><div class="label">Com resultado</div><div class="value">${g('resultado').length}</div></div></div>
+  ${(() => { const s = sugestoesCrescimento(); return s.length ? `<div class="panel" style="margin-top:16px"><div class="flex"><h2>O painel encontrou</h2><span class="tag blue">${s.length}</span></div>
+    <p class="hint" style="margin:-10px 0 14px">Melhorias do dia a dia que saem do que já está registrado. Vire oportunidade o que você quiser acompanhar.</p>
+    <div class="stack">${s.map(x => `<div class="item"><div class="flex"><h4>${esc(x.titulo)}</h4>${pode('crescimento','criar') ? `<button class="btn light sm" onclick="adotarSugestao('${esc(x.id)}')">Virar oportunidade</button>` : ''}</div><p>${esc(x.porque)}</p></div>`).join('')}</div></div>` : ''; })()}
   <div class="grid three" style="margin-top:16px">${[['identificada','01 · IDENTIFICADAS'],['em_execucao','02 · EM EXECUÇÃO'],['resultado','03 · RESULTADOS']].map(([k,n]) => `<div class="panel"><h3>${n}</h3><div class="stack">${g(k).map(card).join('') || vazio('Nenhuma.')}</div></div>`).join('')}</div>`;
+}
+function adotarSugestao(origemId) {
+  const x = sugestoesCrescimento().find(s => s.id === origemId); if (!x) return toast('Esta sugestão já virou oportunidade.');
+  return criar('oportunidades', { id: 'op-' + slug(x.titulo), titulo: x.titulo, descricao: x.porque, tipo: 'melhoria', origem: 'painel', origem_id: x.id, processo_id: x.processo_id || null, etapa: 'identificada' }, 'Melhoria adotada a partir do que o painel encontrou');
 }
 function formOportunidade(id) {
   const o = id ? col('oportunidades').find(x => x.id === id) : { etapa: 'identificada' };
   const podeEd = id ? pode('crescimento','editar') : pode('crescimento','criar');
   abrirModal(`<h2>${id ? esc(o.titulo || o.nome) : 'Nova oportunidade'}</h2>${campo('o-tit','Oportunidade', o.titulo || o.nome || '', 'text', podeEd ? '' : 'disabled')}${campo('o-desc','Descrição / plano', o.descricao || '', 'textarea', podeEd ? '' : 'disabled')}
    <div class="formrow">${sel('o-etapa','Etapa', [['identificada','Identificada'],['em_execucao','Em execução'],['resultado','Resultado']].map(([k,n]) => `<option value="${k}" ${o.etapa === k ? 'selected' : ''}>${n}</option>`).join(''))}${sel('o-imp','Impacto', ['','baixo','médio','alto'].map(x => `<option ${o.impacto === x ? 'selected' : ''}>${x}</option>`).join(''))}</div>
-   <div class="formrow">${sel('o-resp','Responsável', optsPessoas(o.responsavel_pessoa_id))}${campo('o-prazo','Prazo', o.prazo || '', 'date')}</div>${campo('o-res','Resultado observado', o.resultado || '', 'textarea')}
+   <div class="formrow">${sel('o-tipo','Tipo', [['melhoria','Melhoria do dia a dia'],['crescimento','Crescimento']].map(([k,n]) => `<option value="${k}" ${(o.tipo || 'melhoria') === k ? 'selected' : ''}>${n}</option>`).join(''))}${sel('o-resp','Responsável', optsPessoas(o.responsavel_pessoa_id))}</div>
+   <div class="formrow">${campo('o-prazo','Prazo', o.prazo || '', 'date')}${campo('o-proc','Processos que isso exige (ids, separados por vírgula)', (o.processos_envolvidos || []).join(', '), 'text', 'placeholder="deixe em branco se não souber"')}</div>
+   <div id="o-analise" ${(o.tipo || 'melhoria') === 'crescimento' ? '' : 'style="display:none"'}>
+     <h3 style="margin-top:14px">Antes de recomendar</h3>
+     <div class="formrow">${campo('o-ganho','O que ganha', o.ganho || '', 'textarea')}${campo('o-custo','O que custa', o.custo || '', 'textarea')}</div>
+     ${campo('o-risco','O que pode dar errado', o.risco || '', 'textarea')}
+     ${(() => { const al = porteiroDependencia(o.processos_envolvidos); return al.length ? `<div class="v3-alert"><b>Antes de crescer:</b><br>${al.map(esc).join('<br>')}</div>` : (o.processos_envolvidos || []).length ? '<div class="notice">Os processos envolvidos estão publicados e com substituto. A operação aguenta.</div>' : ''; })()}
+   </div>
+   ${campo('o-res','Resultado observado', o.resultado || '', 'textarea')}
    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">${podeEd ? 'Cancelar' : 'Fechar'}</button>${podeEd ? `<button class="v3-btn" onclick="salvarOportunidade('${esc(id || '')}')">Salvar</button>` : ''}</div>`);
 }
 function salvarOportunidade(id) {
   if (!val('o-tit')) return toast('Descreva a oportunidade.');
-  const d = { titulo: val('o-tit'), descricao: val('o-desc') || null, etapa: val('o-etapa'), impacto: val('o-imp') || null, responsavel_pessoa_id: val('o-resp') || null, prazo: val('o-prazo') || null, resultado: val('o-res') || null };
+  const d = { titulo: val('o-tit'), descricao: val('o-desc') || null, etapa: val('o-etapa'), impacto: val('o-imp') || null, responsavel_pessoa_id: val('o-resp') || null, prazo: val('o-prazo') || null, resultado: val('o-res') || null,
+    tipo: val('o-tipo') || 'melhoria', processos_envolvidos: val('o-proc') ? val('o-proc').split(',').map(s => s.trim()).filter(Boolean) : [],
+    ganho: val('o-ganho') || null, custo: val('o-custo') || null, risco: val('o-risco') || null };
   if (id) return editar(col('oportunidades').find(x => x.id === id), d, 'Oportunidade atualizada pelo painel');
   return criar('oportunidades', { id: 'op-' + slug(d.titulo), ...d }, 'Oportunidade criada pelo painel');
 }
@@ -616,6 +693,7 @@ const VIEWS = { hoje: vHoje, processos: vProcessos, indicadores: vIndicadores, r
 function visivel([k,, , area]) {
   // Quem executa vive em três abas: o dia, como se faz e o próprio acesso.
   if (!aprova() && ['indicadores','rotinas','diario','crescimento'].includes(k)) return false;
+  if (k === 'crescimento' && !col('oportunidades').length && !sugestoesCrescimento().length) return false;
   if (area === '__gestao') return gestao(); if (area === null) return true; return pode(area);
 }
 function irPara(k) { aba = k; try { localStorage.setItem('clara-aba', k); } catch {} render(); window.scrollTo(0,0); }
