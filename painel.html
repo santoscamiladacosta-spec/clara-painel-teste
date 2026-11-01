@@ -165,7 +165,7 @@ function vHojeEquipe() {
   const meusInd = col('indicadores').filter(i => i.responsavel_pessoa_id === ctx.eu.pessoa_id);
   return `<div class="ch-col">
     ${saudar(ctx.eu.pessoa?.funcao || '')}
-    <div class="ch-acoes" style="margin-top:2px"><button class="ch-btn sec" onclick="formAviso()">Avisar a gestão</button></div>
+    <div class="ch-acoes" style="margin-top:2px;flex-wrap:wrap"><button class="ch-btn sec" onclick="formAviso()">Avisar a gestão</button><button class="ch-btn sec" onclick="formLembrete()">Criar lembrete</button><button class="ch-btn sec" onclick="caixaRecados()">Caixa${caixaAbertos() ? ' · ' + caixaAbertos() : ''}</button></div>
     ${secao('Seu dia', tarefas.length ? (tarefas.length === 1 ? '1 aberta' : tarefas.length + ' abertas') : 'tudo em dia')}
     ${tarefas.length ? tarefas.map(cardTarefaEquipe).join('') : `<div class="ch-card ch-vazio">Nada no seu nome agora. Se travar em alguma coisa, avise a gestão pela Clara ou pelo processo abaixo.</div>`}
     ${recs.length ? secao('Recados') + recs.map(cardRecadoEquipe).join('') : ''}
@@ -207,6 +207,71 @@ function cardMedicao(i) {
 async function concluirRapido(id) {
   const t = col('tarefas').find(x => x.id === id); if (!t) return;
   await editar(t, { status: 'concluida', concluida_em: new Date().toISOString() }, 'Concluída pelo painel');
+}
+
+const caixaAbertos = () => D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status)).length;
+
+// A caixa é a parte do produto de quem não tem a Clara: recebe, responde e acompanha
+// o que mandou. Sem ela, o painel só fala e nunca escuta.
+function caixaRecados() {
+  const recebidos = D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id);
+  const enviados = D.recados.filter(r => r.de_usuario === ctx.eu.usuario_id && r.para_pessoa_id !== ctx.eu.pessoa_id);
+  const sel = x => x.status === 'concluido' ? '<span class="tag ok">respondido</span>' : x.status === 'visto' ? '<span class="tag blue">visto</span>' : '<span class="tag warn">aberto</span>';
+  const urg = x => (x.prioridade === 'alta' || x.prioridade === 'urgente') ? '<span class="tag red">urgente</span>' : '';
+  abrirModal(`<h2>Caixa de recados</h2>
+    <div class="pillnav" style="margin:14px 0"><button class="active" onclick="abaCaixa('rec',this)">Recebidos (${recebidos.length})</button><button onclick="abaCaixa('env',this)">Enviados (${enviados.length})</button></div>
+    <div id="cx-rec">${recebidos.map(r => `<div class="item" style="margin-bottom:9px"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="flexwrap">${urg(r)}${sel(r)}</span></div>
+      <p>${esc(r.mensagem || '')}</p>
+      <p class="v3-muted">${esc(r.de || '')} · ${dtBR(r.criado_em)}</p>
+      ${r.resposta ? `<div class="detail"><b>Sua resposta:</b> ${esc(r.resposta)}</div>` : `<div class="row-actions"><button class="btn sm" onclick="formResponder('${r.id}')">Responder</button><button class="btn light sm" onclick="recadoStatus('${r.id}','concluido')">Só marcar como resolvido</button></div>`}
+      </div>`).join('') || vazio('Nada na sua caixa.')}</div>
+    <div id="cx-env" style="display:none">${enviados.map(r => `<div class="item" style="margin-bottom:9px"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="flexwrap">${urg(r)}${sel(r)}</span></div>
+      <p>${esc(r.mensagem || '')}</p>
+      <p class="v3-muted">Para ${esc(nome(r.para_pessoa_id) || '—')} · ${dtBR(r.criado_em)}</p>
+      ${r.resposta ? `<div class="detail"><b>Resposta:</b> ${esc(r.resposta)}</div>` : '<p class="v3-muted">Ainda sem resposta.</p>'}
+      </div>`).join('') || vazio('Você ainda não enviou nada.')}</div>
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Fechar</button><button class="v3-btn" onclick="fecharModal();formAviso()">Novo aviso</button></div>`);
+}
+
+function abaCaixa(qual, btn) {
+  $('cx-rec').style.display = qual === 'rec' ? '' : 'none';
+  $('cx-env').style.display = qual === 'env' ? '' : 'none';
+  btn.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+function formResponder(id) {
+  const r = D.recados.find(x => x.id === id);
+  abrirModal(`<h2>Responder</h2><p class="v3-muted">${esc(r.assunto)}</p>
+    <div class="detail" style="margin-bottom:12px">${esc(r.mensagem || '')}</div>
+    ${campo('rp-txt', 'Sua resposta', '', 'textarea')}
+    <p class="v3-muted">Quem perguntou recebe a sua resposta na caixa dele — e por e-mail, se o assunto era urgente.</p>
+    <div class="acts"><button class="v3-btn alt" onclick="caixaRecados()">Voltar</button><button class="v3-btn" onclick="salvarResposta('${id}')">Enviar resposta</button></div>`);
+}
+
+async function salvarResposta(id) {
+  const txt = val('rp-txt'); if (!txt) return toast('Escreva a resposta.');
+  const { error } = await sb.rpc('clara_recado_atualizar', { p_empresa: E, p_recado: id, p_status: 'concluido', p_resposta: txt });
+  if (error) return toast(traduz(error));
+  fecharModal(); toast('Resposta enviada.'); await carregar(); render();
+}
+
+// Lembrete é tarefa com prazo. Reaproveita o aviso, o boletim e a cobrança —
+// em vez de inventar uma peça nova que ninguém acompanharia.
+function formLembrete() {
+  abrirModal(`<h2>Criar lembrete</h2>
+    <p class="v3-muted">Vira uma tarefa com prazo. Aparece no seu dia, no painel e no boletim da manhã.</p>
+    ${campo('lb-tit', 'O que lembrar', '', 'text', 'placeholder="Ex.: conferir o estoque de shampoo"')}
+    <div class="formrow">${campo('lb-prazo', 'Para quando', hojeISO(), 'date')}${aprova() ? sel('lb-resp', 'Para quem', optsPessoas(ctx.eu.pessoa_id)) : sel('lb-resp', 'Para quem', `<option value="${esc(ctx.eu.pessoa_id || '')}">${esc(ctx.eu.pessoa?.nome || 'Você')}</option>`)}</div>
+    ${sel('lb-prio', 'Prioridade', ['normal','alta'].map(p => `<option value="${p}">${p === 'alta' ? 'Alta — avisa na hora' : 'Normal — avisa no boletim'}</option>`).join(''))}
+    ${aprova() ? '' : '<p class="v3-muted">Para pedir algo a um colega, use "Avisar a gestão" — quem decide e atribui é ela.</p>'}
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="salvarLembrete()">Criar</button></div>`);
+}
+
+function salvarLembrete() {
+  if (!val('lb-tit')) return toast('Escreva o que lembrar.');
+  return criar('tarefas', { id: 't-' + slug(val('lb-tit')), titulo: val('lb-tit'), status: 'aberta',
+    responsavel_pessoa_id: val('lb-resp') || ctx.eu.pessoa_id, prazo: val('lb-prazo') || null,
+    prioridade: val('lb-prio') || 'normal' }, 'Lembrete criado pelo painel');
 }
 
 function formAviso() {
@@ -342,7 +407,7 @@ function vHojeGestor() {
   const equipe = col('tarefas').filter(t => !concluida(t.status) && t.responsavel_pessoa_id && t.responsavel_pessoa_id !== ctx.eu.pessoa_id);
   return `<div class="ch-col ch-larga">
     ${saudar(ctx.eu.pessoa?.funcao || 'gestão')}
-    <div class="ch-acoes" style="margin-top:2px"><button class="ch-btn sec" onclick="formAviso()">Avisar alguém</button></div>
+    <div class="ch-acoes" style="margin-top:2px;flex-wrap:wrap"><button class="ch-btn sec" onclick="formAviso()">Avisar alguém</button><button class="ch-btn sec" onclick="formLembrete()">Criar lembrete</button><button class="ch-btn sec" onclick="caixaRecados()">Caixa${caixaAbertos() ? ' · ' + caixaAbertos() : ''}</button></div>
     ${travadas.length ? secao('Impedimentos da equipe', 'resolva primeiro') + travadas.map(cardImpedimento).join('') : ''}
     ${aprovar.length ? secao('Esperando a sua aprovação') + aprovar.map(p => `<article class="ch-card ch-alvo"><h4>${esc(p.nome)}</h4><p class="ch-de">Processo revisado, pronto para entrar no Manual Vivo</p><div class="ch-acoes"><button class="ch-btn" onclick="verProcesso('${esc(p.id)}')">Revisar e publicar</button></div></article>`).join('') : ''}
     ${secao('Suas tarefas', minhas.length ? minhas.length + ' abertas' : 'tudo em dia')}
