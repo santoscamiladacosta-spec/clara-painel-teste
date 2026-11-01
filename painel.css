@@ -328,3 +328,24 @@ details.dj-movs>summary::-webkit-details-marker{display:none}
 details.dj-movs[open]>summary .ch-chev{transform:rotate(45deg)}
 details.dj-movs .dj-ass{font-weight:500;color:var(--muted)}
 @media(max-width:700px){.dj-tops{margin-left:0;width:100%}.dj-res,.dj-fonte{padding-left:12px}}
+
+/* ───────── Nota de Dependência: evolução e leitura por processo ───────── */
+.panel.stat.alerta{border-color:#efd9b8;background:#fffcf6}
+.panel.stat.alerta .value{color:#9b6b31}
+.dep-spark{width:100%;height:auto;max-width:360px;display:block;margin-top:4px}
+.dep-eixo{font-size:9px;fill:#8b97a6;font-family:inherit;letter-spacing:.4px}
+.dep-delta{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.dep-delta.bom{color:#147d64;font-weight:600}
+.dep-delta.ruim{color:#b0562b;font-weight:600}
+.dep-primeira p{font-size:13px;color:var(--muted);line-height:1.6;margin:8px 0 0;max-width:46ch}
+.dep-lista{display:flex;flex-direction:column;gap:2px}
+.dep-linha{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(90px,1fr) 78px;align-items:center;gap:16px;padding:11px 2px;border-bottom:1px solid #eef0f3}
+.dep-linha:last-child{border-bottom:0}
+.dep-nome{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.dep-nome b{font-size:13px;font-weight:600}
+.dep-medidor{height:6px;border-radius:99px;background:#eef1f5;overflow:hidden}
+.dep-medidor span{display:block;height:100%;border-radius:99px}
+.dep-val{text-align:right;font-variant-numeric:tabular-nums}
+.dep-val b{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.dep-val small{display:block;font-size:10px;color:var(--muted);text-transform:capitalize}
+@media(max-width:700px){.dep-linha{grid-template-columns:1fr 64px;row-gap:8px}.dep-medidor{grid-column:1/-1;order:3}}

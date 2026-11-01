@@ -87,6 +87,47 @@ const tagPrazo = (p, st) => { if (!p) return ''; if (concluida(st)) return `<spa
 const vazio = t => `<div class="empty">${t}</div>`;
 const cab = (eyebrow, titulo, sub, acoes = '') => `<div class="flex" style="align-items:flex-start"><div><div class="eyebrow">${eyebrow}</div><h1>${titulo}</h1><p class="sub">${sub}</p></div><div class="flexwrap">${acoes}</div></div>`;
 const optsPessoas = sel => `<option value="">—</option>` + pessoas().map(p => `<option value="${esc(p.pessoa_id)}" ${p.pessoa_id === sel ? 'selected' : ''}>${esc(p.nome)}${p.funcao ? ' · ' + esc(p.funcao) : ''}</option>`).join('');
+const CORES_FAIXA = { baixa: '#14a07e', moderada: '#2388a9', alta: '#d78a32', critica: '#c4472b' };
+
+// Um ponto não é uma série: vira número. A linha só aparece quando há de fato evolução.
+function evolucaoDep(dep) {
+  const h = (dep.historico || []).filter(x => typeof x.nota === 'number');
+  const cor = CORES_FAIXA[dep.faixa] || '#2388a9';
+  const mesBR = m => `${m.slice(5)}/${m.slice(2,4)}`;
+  if (h.length < 2) {
+    const m = h[0];
+    return `<h3>Evolução</h3>
+      <div class="dep-primeira">
+        <p>Esta é a primeira leitura${m ? ', de ' + esc(mesBR(m.mes)) : ''}. A linha de evolução aparece a partir da segunda medição.</p>
+        <p class="hint">A nota cai quando um processo entra no Manual Vivo e quando uma segunda pessoa passa a executá-lo. Os dois acontecem sozinhos conforme a equipe usa o painel.</p>
+      </div>`;
+  }
+  const W = 320, H = 96, P = 16;
+  const notas = h.map(x => x.nota);
+  const max = Math.max(...notas, 10), min = Math.min(...notas, 0);
+  const faixa = Math.max(1, max - min);
+  const x = i => P + i * (W - P * 2) / (h.length - 1);
+  const y = v => P + (1 - (v - min) / faixa) * (H - P * 2);
+  const pts = h.map((p, i) => [x(i), y(p.nota)]);
+  const linha = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area = `${linha} L${pts[pts.length-1][0].toFixed(1)},${H - P + 6} L${pts[0][0].toFixed(1)},${H - P + 6} Z`;
+  const primeira = h[0], ultima = h[h.length - 1];
+  const delta = ultima.nota - primeira.nota;
+  return `<h3>Evolução</h3>
+    <svg class="dep-spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Nota de Dependência de ${notas.join(', ')} entre ${mesBR(primeira.mes)} e ${mesBR(ultima.mes)}">
+      <defs><linearGradient id="gdep" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${cor}" stop-opacity="0.22"/><stop offset="100%" stop-color="${cor}" stop-opacity="0"/></linearGradient></defs>
+      <line x1="${P}" y1="${H - P + 6}" x2="${W - P}" y2="${H - P + 6}" stroke="#e3e9ef" stroke-width="1"/>
+      <path d="${area}" fill="url(#gdep)"/>
+      <path d="${linha}" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.slice(0, -1).map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="${cor}" opacity="0.45"/>`).join('')}
+      <circle cx="${pts[pts.length-1][0].toFixed(1)}" cy="${pts[pts.length-1][1].toFixed(1)}" r="5" fill="${cor}" stroke="#fff" stroke-width="2"/>
+      <text x="${P}" y="${H - 1}" class="dep-eixo">${esc(mesBR(primeira.mes))}</text>
+      <text x="${W - P}" y="${H - 1}" class="dep-eixo" text-anchor="end">${esc(mesBR(ultima.mes))}</text>
+    </svg>
+    <p class="dep-delta ${delta < 0 ? 'bom' : delta > 0 ? 'ruim' : ''}">${delta === 0 ? 'Sem mudança' : delta < 0 ? `Caiu ${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'ponto' : 'pontos'}` : `Subiu ${delta} ${delta === 1 ? 'ponto' : 'pontos'}`} desde ${esc(mesBR(primeira.mes))} · de ${primeira.nota} para ${ultima.nota}</p>`;
+}
+
 function depRing(nota, faixa) {
   const cor = { baixa: '#14a07e', moderada: '#2388a9', alta: '#d78a32', critica: '#c4472b' }[faixa] || '#9fb2c2';
   const pct = nota == null ? 0 : nota;
@@ -537,11 +578,28 @@ function vIndicadores() {
   const inds = col('indicadores'); const dep = D.dep;
   const medidos = inds.filter(i => typeof i.ultimo_valor === 'number');
   return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Indicadores', 'Acompanhe resultados e cadastre o que importa para sua empresa.', pode('indicadores','criar') ? `<button class="btn" onclick="formIndicador()">+ Novo indicador</button>` : '') + `
-  <div class="grid four"><div class="panel stat"><div class="label">Indicadores</div><div class="value">${inds.length}</div><div class="hint">cadastrados</div></div><div class="panel stat"><div class="label">Mensurados</div><div class="value">${medidos.length}</div><div class="hint">com registro</div></div><div class="panel stat"><div class="label">Não mensurados</div><div class="value">${inds.length - medidos.length}</div><div class="hint">aguardando medição</div></div><div class="panel stat"><div class="label">Metas</div><div class="value">${inds.filter(i => i.meta && !/pendente/i.test(i.meta)).length}</div><div class="hint">definidas</div></div></div>
+  ${(() => {
+    const atras = inds.filter(i => atrasoIndicador(i)).length;
+    const semMeta = inds.filter(i => !i.meta || /pendente/i.test(i.meta)).length;
+    const semInd = col('processos').filter(p => p.critico && !inds.some(x => x.processo_id === p.id)).length;
+    const tile = (n, rot, sub, alerta) => `<div class="panel stat ${alerta && n > 0 ? 'alerta' : ''}"><div class="label">${rot}</div><div class="value">${n}</div><div class="hint">${sub}</div></div>`;
+    return `<div class="grid four">
+      ${tile(inds.length, 'Indicadores', 'acompanhados hoje', false)}
+      ${tile(atras, 'Atrasados para medir', atras ? 'a frequência venceu' : 'tudo em dia', true)}
+      ${tile(semMeta, 'Sem meta', semMeta ? 'número sem alvo não cobra ninguém' : 'todos com alvo', true)}
+      ${tile(semInd, 'Processo crítico sem indicador', semInd ? 'o que não se mede não melhora' : 'todos medidos', true)}
+    </div>`;
+  })()}
   ${aprova() && dep ? `<div class="panel" style="margin-top:16px"><div class="eyebrow">INDICADOR ESTRATÉGICO · PROPRIETÁRIA</div><div class="grid two" style="margin-top:10px;align-items:center">
     <div class="flex" style="justify-content:flex-start;gap:22px">${depRing(dep.nota, dep.faixa)}<div><h2 style="margin-bottom:6px">Nota de Dependência</h2>${tagFaixa(dep.faixa)}<p class="hint" style="margin-top:10px">${dep.processos_avaliados} de ${dep.processos_inventariados} processos avaliados${dep.status === 'parcial' ? ' · cobertura parcial' : ''}. Quanto menor, menos a operação depende de uma pessoa só.</p></div></div>
-    <div><h3>Evolução mensal</h3><div class="hist">${(dep.historico || []).map(h => `<div style="height:${Math.max(4, h.nota || 0)}%"><b>${h.nota ?? '—'}</b><small>${esc(h.mes.slice(5))}/${esc(h.mes.slice(2,4))}</small></div>`).join('')}</div></div></div>
-    <h3 style="margin-top:28px">Por processo</h3><div class="stack">${(dep.processos || []).map(p => `<div class="flex item"><span>${esc(p.nome)}</span><span class="flexwrap">${p.publicado ? '<span class="tag ok">Manual Vivo</span>' : ''}${tagFaixa(p.faixa)}<b>${p.nota ?? '—'}</b></span></div>`).join('')}</div>
+    <div>${evolucaoDep(dep)}</div></div>
+    <h3 style="margin-top:28px">Por processo</h3>
+    <p class="hint" style="margin:-8px 0 14px">Quanto maior a barra, mais a operação depende de alguém específico naquele processo.</p>
+    <div class="dep-lista">${[...(dep.processos || [])].sort((a,b) => (b.nota ?? 0) - (a.nota ?? 0)).map(p => `<div class="dep-linha">
+      <div class="dep-nome"><b>${esc(p.nome)}</b>${p.publicado ? '<span class="tag ok">Manual Vivo</span>' : '<span class="tag gray">fora do manual</span>'}</div>
+      <div class="dep-medidor"><span style="width:${Math.max(2, Math.min(100, p.nota ?? 0))}%;background:${CORES_FAIXA[p.faixa] || '#9fb2c2'}"></span></div>
+      <div class="dep-val"><b>${p.nota ?? '—'}</b><small>${esc(p.faixa || 'sem leitura')}</small></div>
+    </div>`).join('')}</div>
     <p class="hint" style="margin-top:12px">O que reduz a nota: documentar e publicar os processos no Manual Vivo, preparar substitutos e delegar decisões.</p></div>` : ''}
   ${(() => {
     const atrasados = inds.map(i => ({ i, a: atrasoIndicador(i) })).filter(x => x.a);
