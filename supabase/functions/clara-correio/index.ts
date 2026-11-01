@@ -126,7 +126,7 @@ async function imediatos() {
       ${botao("Abrir o painel", PAINEL + "/painel.html")}
       ${rodape(emp.nome, "Avisos assim saem na hora. O resto espera o boletim da manhã.")}`);
 
-    const res = await enviar(dest, `[Clara] ${r.assunto}`, html);
+    const res = await enviar(dest, r.assunto, html);
     await api(`/rest/v1/clara_recados?id=eq.${r.id}`, {
       method: "PATCH",
       headers: { prefer: "return=minimal" },
@@ -187,7 +187,7 @@ async function boletins(hora: number, diaSemana: number) {
         ${botao("Abrir o painel", PAINEL + "/painel.html")}
         ${rodape(emp.nome, "Você recebe este boletim só quando há algo no seu nome. Dia tranquilo, nenhum e-mail.")}`);
 
-      const res = await enviar(dest, `[Clara] Seu dia na ${emp.nome}`, html);
+      const res = await enviar(dest, `Seu dia na ${emp.nome}`, html);
       feitos.push({ pessoa: v.pessoa_id, ...res });
     }
   }
@@ -250,7 +250,7 @@ async function resumos(hora: number, diaSemana: number) {
         ${botao("Ver no painel", PAINEL + "/painel.html")}
         ${rodape(emp.nome, "Para conversar sobre qualquer um destes pontos, é só me chamar.")}`);
 
-      const res = await enviar(dest, `[Clara] ${emp.nome} — o retrato de hoje`, html);
+      const res = await enviar(dest, `${emp.nome} — o retrato de hoje`, html);
       feitos.push({ dono: d.pessoa_id, ...res });
     }
   }
