@@ -65,7 +65,7 @@ const editar = (reg, novos, motivo) => { const { _rev, _em, _col, ...orig } = re
 const arquivar = (reg, motivo) => { const { _rev, _em, _col, ...orig } = reg; return salvar([{ colecao: _col, acao: 'excluir', id: reg.id, revisao_esperada: _rev, motivo, dados: orig }], 'Arquivado. O histórico foi preservado.'); };
 function traduz(e) {
   const m = String(e?.message || e || '');
-  const map = { ACESSO_NEGADO: 'Seu perfil não tem permissão para esta ação.', APROVACAO_RESTRITA: 'Somente a gestão aprova e altera processos publicados no Manual Vivo.', CONFLITO_REVISAO: 'Alguém alterou este item agora há pouco. Recarreguei os dados: tente de novo.', SOMENTE_GESTAO: 'Ação restrita ao proprietário/consultoria.', PESSOA_COM_VINCULOS_ATIVOS: 'Esta pessoa ainda é responsável por itens ativos.', TAREFA_RESTRITA_A_GESTAO: 'Funcionário cria tarefas só para si. Para um colega, avise a gestão pela Clara.', FONTE_OBRIGATORIA: 'Informe a origem da informação.' };
+  const map = { ACESSO_NEGADO: 'Seu perfil não tem permissão para esta ação.', APROVACAO_RESTRITA: 'Somente a gestão aprova e altera processos publicados no Manual Vivo.', CONFLITO_REVISAO: 'Alguém alterou este item agora há pouco. Recarreguei os dados: tente de novo.', SOMENTE_GESTAO: 'Ação restrita ao proprietário/consultoria.', PESSOA_COM_VINCULOS_ATIVOS: 'Esta pessoa ainda é responsável por itens ativos.', TAREFA_RESTRITA_A_GESTAO: 'Funcionário cria tarefas só para si. Para um colega, avise a gestão pela Clara.', FONTE_OBRIGATORIA: 'Informe a origem da informação.', LIMITE_USUARIOS_PAINEL: 'Todos os usuários do painel previstos no contrato já estão em uso. Desative alguém ou fale com a consultoria para ampliar.', LIMITE_LICENCAS_CLARA: 'Todas as licenças da Clara do contrato já estão em uso. A pessoa pode entrar só no painel, ou fale com a consultoria para ampliar.' };
   for (const k in map) if (m.includes(k)) { if (k === 'CONFLITO_REVISAO') carregar().then(render); return map[k]; }
   return 'Não foi possível concluir: ' + m;
 }
@@ -337,10 +337,10 @@ function salvarOportunidade(id) {
 function vClara() {
   const meus = D.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id);
   const enviados = D.recados.filter(r => r.de_usuario === ctx.eu.usuario_id);
-  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Minha Clara', 'Converse com a Clara, acompanhe seus avisos e o que você enviou à equipe.') + `
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Minha Clara', ctx.eu.acesso_clara === false ? 'Acompanhe seus avisos e o que você enviou à equipe.' : 'Converse com a Clara, acompanhe seus avisos e o que você enviou à equipe.') + `
   <div class="hero"><img src="clara.jpg" alt="Clara"><div><div class="eyebrow" style="color:#c8a23a">SUA GERENTE DE OPERAÇÕES</div><h2>Olá, ${esc(ctx.eu.pessoa?.nome || '')}! Eu sou a Clara.</h2><p>Eu acompanho a operação da ${esc(ctx.empresa.nome)} com você: priorizo, organizo processos e rotinas, acompanho os combinados e registro aqui no painel o que for aprovado.</p></div></div>
   <div class="grid two" style="margin-top:16px">
-    <div class="panel"><h2>Conversar com a Clara</h2><p class="hint">Abra o Claude e diga "Oi, Clara". Experimente: <b>+como estamos hoje?</b>, <b>+pendências</b>, <b>+processos</b>, <b>+acompanhar</b>, <b>+ajuda</b>.</p><a class="btn" style="display:inline-block;text-decoration:none;margin-top:8px" href="${CLARA.conversar}" target="_blank" rel="noopener">Abrir a Clara no Claude ↗</a></div>
+    ${ctx.eu.acesso_clara === false ? `<div class="panel"><h2>Seu acesso é pelo painel</h2><p class="hint">Aqui você acompanha e atualiza suas tarefas, rotinas e processos com a equipe, e recebe os avisos da Clara. A conversa com a Clara no Claude é uma licença à parte: se fizer sentido para a sua função, peça ao proprietário da empresa.</p></div>` : `<div class="panel"><h2>Conversar com a Clara</h2><p class="hint">Abra o Claude e diga "Oi, Clara". Experimente: <b>+como estamos hoje?</b>, <b>+pendências</b>, <b>+processos</b>, <b>+acompanhar</b>, <b>+ajuda</b>.</p><a class="btn" style="display:inline-block;text-decoration:none;margin-top:8px" href="${CLARA.conversar}" target="_blank" rel="noopener">Abrir a Clara no Claude ↗</a></div>`}
     <div class="panel"><h2>Meus avisos</h2><div class="stack">${meus.slice(0,8).map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag ${r.status === 'concluido' ? 'ok' : r.status === 'aberto' ? 'warn' : 'gray'}">${esc(r.status)}</span></div><p>${esc(r.mensagem)}</p><p class="v3-muted">${dtBR(r.criado_em)}</p>${['aberto','visto'].includes(r.status) ? `<div class="row-actions"><button class="btn light sm" onclick="recadoStatus('${r.id}','concluido')">Concluir</button></div>` : ''}</div>`).join('') || vazio('Nenhum aviso para você.')}</div></div>
   </div>
   <div class="panel" style="margin-top:16px"><h2>O que você enviou</h2><div class="stack">${enviados.slice(0,10).map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag">${esc(nome(r.para_pessoa_id))}</span></div><p class="v3-muted">${esc(r.status)} · ${dtBR(r.criado_em)}${r.resposta ? ' · resposta: ' + esc(r.resposta) : ''}</p></div>`).join('') || vazio('Nada enviado ainda.')}</div></div>`;
@@ -348,18 +348,32 @@ function vClara() {
 
 // ───────── CONFIGURAÇÕES ─────────
 function vConfig() {
-  const a = D.acessos || {}; const c = ctx.contexto || {};
-  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Configurações', 'Gerencie os dados da empresa, usuários e acessos.') + `
+  const a = D.acessos || {}; const c = ctx.contexto || {}; const L = a.licencas || {};
+  const lim = (uso, max) => `${uso ?? 0}${max != null ? ` de ${max}` : ''}`;
+  const licencas = `<div class="panel" style="margin-bottom:16px"><div class="flex"><div><h2 style="margin-bottom:4px">Licenças</h2><p class="hint" style="margin:0">Toda a equipe pode usar o painel. A conversa com a Clara no Claude é por licença: escolha quem recebe.</p></div>
+    <div class="flexwrap"><span class="tag blue">Com a Clara: ${lim(L.clara_em_uso, L.clara_limite)}</span><span class="tag">No painel: ${lim(L.painel_em_uso, L.painel_limite)}</span></div></div>
+    ${ctx.eu.perfil === 'consultora' ? `<div class="formrow" style="margin-top:14px">${campo('lic-clara','Licenças da Clara (vazio = sem limite)', L.clara_limite ?? '', 'number')}${campo('lic-painel','Usuários do painel (vazio = sem limite)', L.painel_limite ?? '', 'number')}</div><button class="btn light sm" onclick="salvarLicencas()">Salvar contrato</button>` : ''}</div>`;
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Configurações', 'Gerencie os dados da empresa, usuários e acessos.') + licencas + `
   <div class="grid two"><div class="panel"><h2>Empresa</h2>${campo('e-nome','Nome', ctx.empresa.nome)}${campo('e-seg','Segmento', c.publico?.segmento || c.segmento || '')}${campo('e-loc','Localização', c.publico?.localizacao || c.localizacao || '')}<button class="btn" onclick="salvarEmpresa()">Salvar empresa</button></div>
   <div class="panel"><h2>Permissões</h2><p class="hint">Cada pessoa vê e edita somente o que o perfil permite. O servidor aplica as regras: o painel e a Clara seguem as mesmas permissões.</p><div class="stack"><div class="item"><b>Proprietária</b><p>Vê e aprova tudo, gerencia a equipe.</p></div><div class="item"><b>Gestor</b><p>Coordena processos, rotinas, indicadores e crescimento; aprova processos.</p></div><div class="item"><b>Funcionário</b><p>Executa e atualiza tarefas e rotinas; sugere processos (a gestão aprova).</p></div></div></div></div>
   <div class="panel" style="margin-top:16px"><div class="flex"><h2>Usuários e equipe</h2><button class="btn" onclick="formConvite()">+ Dar acesso</button></div>
-   <div class="tablewrap"><table><tr><th>Pessoa</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr>${(a.acessos || []).map(x => `<tr><td><b>${esc(x.nome || '—')}</b></td><td>${esc(x.email)}</td><td>${esc(x.perfil)}</td><td>${x.ativo ? '<span class="tag ok">ativo</span>' : '<span class="tag gray">desativado</span>'}</td><td>${x.usuario_id !== ctx.eu.usuario_id && x.perfil !== 'proprietario' ? `<button class="btn light sm" onclick="alternarAcesso('${x.usuario_id}',${!x.ativo})">${x.ativo ? 'Desativar' : 'Reativar'}</button>` : ''}</td></tr>`).join('')}</table></div>
-   ${(a.convites_pendentes || []).length ? `<h3 style="margin-top:18px">Convites pendentes</h3>${a.convites_pendentes.map(x => `<p class="v3-muted">${esc(x.email)} · ${esc(x.perfil)} · ${esc(nome(x.pessoa_id))} — <a href="#" onclick="formConvite('${esc(x.pessoa_id || '')}','${esc(x.email)}','${esc(x.perfil)}');return false">gerar novo link</a></p>`).join('')}` : ''}
+   <div class="tablewrap"><table><tr><th>Pessoa</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Clara no Claude</th><th></th></tr>${(a.acessos || []).map(x => `<tr><td><b>${esc(x.nome || '—')}</b></td><td>${esc(x.email)}</td><td>${esc(x.perfil)}</td><td>${x.ativo ? '<span class="tag ok">ativo</span>' : '<span class="tag gray">desativado</span>'}</td><td>${x.ativo ? `<label class="v3-muted" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" ${x.acesso_clara ? 'checked' : ''} ${x.usuario_id === ctx.eu.usuario_id ? 'disabled title="Sua própria licença é ajustada pela consultoria"' : ''} onchange="alternarClara('${x.usuario_id}',this.checked,this)"> ${x.acesso_clara ? 'com licença' : 'só painel'}</label>` : '—'}</td><td>${x.usuario_id !== ctx.eu.usuario_id && x.perfil !== 'proprietario' ? `<button class="btn light sm" onclick="alternarAcesso('${x.usuario_id}',${!x.ativo})">${x.ativo ? 'Desativar' : 'Reativar'}</button>` : ''}</td></tr>`).join('')}</table></div>
+   ${(a.convites_pendentes || []).length ? `<h3 style="margin-top:18px">Convites pendentes</h3>${a.convites_pendentes.map(x => `<p class="v3-muted">${esc(x.email)} · ${esc(x.perfil)} · ${esc(nome(x.pessoa_id))} · ${x.acesso_clara ? 'com Clara' : 'só painel'} — <a href="#" onclick="formConvite('${esc(x.pessoa_id || '')}','${esc(x.email)}','${esc(x.perfil)}');return false">gerar novo link</a></p>`).join('')}` : ''}
    ${(a.pessoas_sem_acesso || []).length ? `<h3 style="margin-top:18px">Pessoas do mapeamento ainda sem acesso</h3><div class="flexwrap">${a.pessoas_sem_acesso.map(x => `<button class="btn light sm" onclick="formConvite('${esc(x.pessoa_id)}')">${esc(x.nome)} · dar acesso</button>`).join('')}</div>` : ''}</div>`;
 }
 async function salvarEmpresa() {
   const { error } = await sb.rpc('clara_empresa_atualizar', { p_empresa: E, p_nome: val('e-nome'), p_contexto: { publico: { ...(ctx.contexto?.publico || {}), segmento: val('e-seg') || null, localizacao: val('e-loc') || null } } });
   if (error) return toast(traduz(error)); toast('Dados da empresa salvos.'); await iniciar(E);
+}
+async function alternarClara(u, ligar, el) {
+  const { error } = await sb.rpc('clara_acesso_clara', { p_empresa: E, p_usuario: u, p_ativo: ligar });
+  if (error) { if (el) el.checked = !ligar; return toast(traduz(error), 6000); }
+  toast(ligar ? 'Licença da Clara atribuída.' : 'Licença da Clara retirada. A pessoa continua usando o painel.'); await carregar(); render();
+}
+async function salvarLicencas() {
+  const n = id => { const v = val(id); return v === '' || v == null ? null : Math.max(0, parseInt(v, 10)); };
+  const { error } = await sb.rpc('clara_licenca_definir', { p_empresa: E, p_licencas_clara: n('lic-clara'), p_licencas_painel: n('lic-painel') });
+  if (error) return toast(traduz(error)); toast('Contrato de licenças salvo.'); await carregar(); render();
 }
 async function alternarAcesso(u, ativo) {
   if (!ativo && !confirmar('Desativar este acesso? A pessoa deixa de ver a empresa imediatamente.')) return;
@@ -367,9 +381,11 @@ async function alternarAcesso(u, ativo) {
   if (error) return toast(traduz(error)); toast(ativo ? 'Acesso reativado.' : 'Acesso desativado.'); await carregar(); render();
 }
 function formConvite(pessoa = '', email = '', perfil = 'funcionario') {
-  abrirModal(`<h2>Dar acesso à Clara</h2><p class="v3-muted">Gero um link pessoal para você enviar (por exemplo, pelo WhatsApp). Pelo link, a pessoa cria a senha e entra com o acesso certo.</p>
+  const L = (D.acessos || {}).licencas || {}; const livre = L.clara_limite == null || L.clara_em_uso < L.clara_limite;
+  abrirModal(`<h2>Dar acesso</h2><p class="v3-muted">Gero um link pessoal para você enviar (por exemplo, pelo WhatsApp). Pelo link, a pessoa cria a senha e entra com o acesso certo.</p>
    ${sel('cv-pessoa','Pessoa do mapeamento', optsPessoas(pessoa))}${campo('cv-email','E-mail da pessoa', email, 'email')}
    ${sel('cv-perfil','Perfil', [['funcionario','Funcionário'],['gestor','Gestor'],['temporario','Temporário']].concat(ctx.eu.perfil === 'consultora' ? [['proprietario','Proprietário']] : []).map(([k,n]) => `<option value="${k}" ${perfil === k ? 'selected' : ''}>${n}</option>`).join(''))}
+   <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 4px;font-weight:600;font-size:13px"><input type="checkbox" id="cv-clara" ${livre ? '' : 'disabled'}> <span>Incluir a Clara no Claude (licença)<br><small class="v3-muted" style="font-weight:400">${livre ? 'Sem marcar, a pessoa usa só o painel com a equipe.' : 'Todas as licenças da Clara estão em uso: a pessoa entra só no painel.'} Licenças da Clara: ${L.clara_em_uso ?? 0}${L.clara_limite != null ? ' de ' + L.clara_limite : ''}.</small></span></label>
    <div id="cv-res"></div><div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Fechar</button><button class="v3-btn" id="cv-btn" onclick="convidar()">Gerar link de acesso</button></div>`);
 }
 async function convidar() {
@@ -377,10 +393,10 @@ async function convidar() {
   $('cv-btn').disabled = true;
   try {
     const { data: { session } } = await sb.auth.getSession();
-    const r = await fetch(CLARA.servidor + '/acao/convidar', { method: 'POST', headers: { authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' }, body: JSON.stringify({ empresa_id: E, email: val('cv-email'), perfil: val('cv-perfil'), pessoa_id: val('cv-pessoa') || null }) });
+    const r = await fetch(CLARA.servidor + '/acao/convidar', { method: 'POST', headers: { authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' }, body: JSON.stringify({ empresa_id: E, email: val('cv-email'), perfil: val('cv-perfil'), pessoa_id: val('cv-pessoa') || null, acesso_clara: !!($('cv-clara') && $('cv-clara').checked) }) });
     const j = await r.json(); if (!j.ok) throw Error(j.erro);
     const pn = nome(val('cv-pessoa')) || 'tudo bem';
-    const msg = `Olá, ${pn}! Você agora tem acesso à Clara, a gerente de operações da ${ctx.empresa.nome}. Crie sua senha por este link: ${j.link_convite}`;
+    const msg = j.acesso_clara ? `Olá, ${pn}! Você agora tem acesso à Clara, a gerente de operações da ${ctx.empresa.nome}, e ao painel da equipe. Crie sua senha por este link: ${j.link_convite}` : `Olá, ${pn}! Você agora tem acesso ao painel de operações da ${ctx.empresa.nome}. Crie sua senha por este link: ${j.link_convite}`;
     $('cv-res').innerHTML = j.link_convite ? `<div class="notice" style="margin-top:8px"><b>Link pronto.</b> ${esc(j.orientacao || '')}<div class="linkbox" style="margin-top:8px">${esc(j.link_convite)}</div><div class="row-actions" style="margin-top:8px"><button class="btn light sm" onclick="navigator.clipboard.writeText(${JSON.stringify(j.link_convite).replace(/"/g,'&quot;')});toast('Link copiado.')">Copiar link</button><a class="btn sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Enviar pelo WhatsApp</a></div></div>` : `<div class="notice">${esc(j.orientacao || 'Acesso vinculado.')}</div>`;
     await carregar();
   } catch (e) { toast(traduz(e), 6000); } finally { const b = $('cv-btn'); if (b) b.disabled = false; }
