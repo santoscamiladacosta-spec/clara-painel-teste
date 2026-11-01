@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Clara | Painel</title>
+<style>
+:root{--navy:#102447;--ouro:#C8A23A;--fundo:#f4f5f8;--cartao:#fff;--texto:#1d2633;--suave:#5b6675;--borda:#dfe3ea;--erro:#a3261b;--ok:#1e6b3c;--alerta:#9a5b00;--chip:#f2ecdc}
+@media (prefers-color-scheme:dark){:root{--fundo:#0d1a2e;--cartao:#142540;--texto:#eef2f7;--suave:#b7c2d1;--borda:#2c4363;--navy:#e9eef6;--chip:#2a3a52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+header{background:#102447;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .marca{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ouro);font-weight:600}
+header h1{margin:0;font-size:18px;font-weight:600}
+header .quem{margin-left:auto;font-size:13px;opacity:.9;text-align:right}
+header select,header button{font:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #33507a;background:#1a3560;color:#fff;cursor:pointer}
+nav{display:flex;gap:4px;padding:10px 16px;overflow-x:auto;background:var(--cartao);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:2}
+nav button{font:inherit;font-size:14px;padding:8px 14px;border:0;border-radius:999px;background:transparent;color:var(--suave);cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{background:var(--chip);color:var(--navy);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;padding:16px}
+.cartao h3{margin:0 0 6px;font-size:15px;color:var(--navy)}
+.cartao p{margin:4px 0;color:var(--suave);font-size:14px}
+.cartao ul{margin:6px 0 0;padding-left:18px;color:var(--suave);font-size:14px}
+h2{font-size:16px;margin:22px 0 10px;color:var(--navy)}
+h2:first-child{margin-top:0}
+.chip{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--navy);margin-right:4px}
+.chip.alta,.chip.urgente{background:#fbe3d6;color:#8a2c0d}.chip.aberto{background:#fff2cc;color:var(--alerta)}.chip.concluido{background:#dcefe3;color:var(--ok)}
+.num{font-size:28px;font-weight:600;color:var(--navy);line-height:1.1}
+.vazio{color:var(--suave);font-style:italic}
+.linha{display:flex;gap:10px;align-items:baseline;justify-content:space-between}
+.tempo{font-size:12px;color:var(--suave)}
+details summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:8px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:var(--suave)}
+.aviso{background:var(--cartao);border:1px solid var(--borda);border-left:4px solid var(--ouro);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:14px;color:var(--suave)}
+#entrar{max-width:420px;margin:12vh auto;text-align:center}
+#entrar a{display:inline-block;margin-top:14px;padding:12px 20px;border-radius:10px;background:#102447;color:#fff;text-decoration:none;font-weight:600}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="marca">Clara · Gerente de Operações</div><h1 id="empresa-nome">Painel</h1></div>
+  <select id="sel-empresa" hidden aria-label="Escolher empresa"></select>
+  <div class="quem"><div id="quem"></div><button id="b-sair" hidden>Sair</button></div>
+</header>
+<nav id="abas" hidden role="tablist"></nav>
+<main>
+  <section id="entrar" hidden class="cartao">
+    <h2>Entre para ver o painel</h2>
+    <p>Use o mesmo e-mail e senha da Clara.</p>
+    <a href="acesso.html">Entrar</a>
+  </section>
+  <div id="conteudo"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js"></script>
+<script>
+const CLARA = { url: 'https://tkdzoxuspcbsnhmzxypd.supabase.co', chavePublica: 'sb_publishable_C5QQEoKHTKtCUL7gUAaq8w_Wsqz6en8' };
+const sb = supabase.createClient(CLARA.url, CLARA.chavePublica, { auth: { persistSession: true } });
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dataBR = d => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const diaBR = d => d ? new Date(d + (String(d).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('pt-BR') : '';
+let ctx, empresaId, dados = {}, abaAtual = 'hoje';
+const ABAS = [
+  ['hoje','Hoje'],['equipe','Equipe'],['processos','Processos'],['rotinas','Tarefas e rotinas'],
+  ['indicadores','Indicadores'],['crescimento','Oportunidades'],['diario','Diário de Bordo'],['memoria','Memória'],['acessos','Acessos']
+];
+const pode = area => ctx?.eu?.permissoes === 'total' || ctx?.eu?.permissoes?.[area]?.ver === true;
+const nomePessoa = id => (ctx?.equipe || []).find(p => p.pessoa_id === id)?.nome || id || '';
+
+async function carregar() {
+  const [reg, dia, mem, rec] = await Promise.all([
+    sb.from('clara_registros').select('*').eq('empresa_id', empresaId).eq('arquivado', false).order('colecao').order('id'),
+    sb.from('clara_diario').select('*').eq('empresa_id', empresaId).order('registrado_em', { ascending: false }).limit(100),
+    sb.from('clara_memoria').select('*').eq('empresa_id', empresaId).order('criado_em', { ascending: false }).limit(100),
+    sb.from('clara_recados').select('*').eq('empresa_id', empresaId).order('criado_em', { ascending: false }).limit(200)
+  ]);
+  dados = { registros: reg.data || [], diario: dia.data || [], memoria: mem.data || [], recados: rec.data || [] };
+  if (ctx.eu.permissoes === 'total') { const { data } = await sb.rpc('clara_equipe_listar', { p_empresa: empresaId }); dados.acessos = data; }
+}
+const col = c => dados.registros.filter(r => r.colecao === c).map(r => ({ ...r.dados, _rev: r.revisao, _em: r.atualizado_em }));
+
+function cartaoRegistro(d, extra = '') {
+  const titulo = d.nome || d.titulo || d.id;
+  const resp = d.responsavel_pessoa_id ? `<p>Responsável: <b>${esc(nomePessoa(d.responsavel_pessoa_id))}</b></p>` : '';
+  const prazo = d.prazo ? `<p>Prazo: <b>${esc(diaBR(d.prazo))}</b></p>` : '';
+  const lista = (rot, arr) => Array.isArray(arr) && arr.length ? `<p style="margin-top:8px"><b>${rot}</b></p><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const status = d.status ? `<span class="chip ${esc(d.status)}">${esc(d.status)}</span>` : '';
+  const val = d.status_validacao ? `<span class="chip">${d.status_validacao === 'A_VALIDAR' ? 'a validar' : esc(d.status_validacao)}</span>` : '';
+  return `<div class="cartao"><h3>${esc(titulo)}</h3><div>${status}${val}</div>${resp}${prazo}${extra}
+    ${lista('Etapas', d.etapas)}${lista('A confirmar', d.a_confirmar)}${lista('Responsabilidades', d.responsabilidades)}
+    ${d.excecao ? `<p><b>Exceção:</b> ${esc(d.excecao)}</p>` : ''}${d.decisao_proprietaria ? `<p><b>Decisão da proprietária:</b> ${esc(d.decisao_proprietaria)}</p>` : ''}
+    <details><summary>Origem e detalhes</summary><pre>${esc(JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => !k.startsWith('_'))), null, 2))}</pre><p class="tempo">Revisão ${d._rev} · atualizado ${esc(dataBR(d._em))}</p></details></div>`;
+}
+function cartaoRecado(r) {
+  const de = (dados.acessos?.acessos || []).find(a => a.usuario_id === r.de_usuario)?.nome || (r.de_usuario === ctx.eu.usuario_id ? 'você' : 'colega');
+  return `<div class="cartao"><div class="linha"><h3>${esc(r.assunto)}</h3><span class="tempo">${esc(dataBR(r.criado_em))}</span></div>
+    <div><span class="chip">${esc(r.tipo)}</span><span class="chip ${esc(r.prioridade)}">${esc(r.prioridade)}</span><span class="chip ${esc(r.status)}">${esc(r.status)}</span></div>
+    <p>${esc(r.mensagem)}</p><p class="tempo">De: ${esc(de)} → Para: ${esc(nomePessoa(r.para_pessoa_id))}${r.prazo ? ' · prazo ' + esc(diaBR(r.prazo)) : ''}</p>
+    ${r.resposta ? `<p><b>Resposta:</b> ${esc(r.resposta)}</p>` : ''}</div>`;
+}
+const grade = (itens, vazio) => itens.length ? `<div class="grade">${itens.join('')}</div>` : `<p class="vazio">${vazio}</p>`;
+
+const VIEWS = {
+  hoje() {
+    const meus = dados.recados.filter(r => r.para_pessoa_id === ctx.eu.pessoa_id && ['aberto','visto'].includes(r.status));
+    const abertosEmpresa = dados.recados.filter(r => ['aberto','visto'].includes(r.status));
+    const tarefas = col('tarefas').filter(t => !['concluida','concluída','feito'].includes(String(t.status || '').toLowerCase()));
+    const pontos = col('pontos_abertos'), inds = col('indicadores');
+    return `<div class="grade" style="margin-bottom:8px">
+      <div class="cartao"><p>Recados para você</p><div class="num">${meus.length}</div></div>
+      <div class="cartao"><p>Tarefas abertas</p><div class="num">${tarefas.length}</div></div>
+      <div class="cartao"><p>Pontos em aberto</p><div class="num">${pontos.length}</div></div>
+      ${ctx.eu.permissoes === 'total' ? `<div class="cartao"><p>Recados abertos na empresa</p><div class="num">${abertosEmpresa.length}</div></div>` : ''}
+    </div>
+    <h2>Sua caixa de recados</h2>${grade(meus.map(cartaoRecado), 'Nenhum recado aberto para você.')}
+    ${ctx.eu.permissoes === 'total' ? `<h2>Todos os recados da empresa</h2>${grade(dados.recados.slice(0, 30).map(cartaoRecado), 'Nenhum recado ainda.')}` : ''}
+    <h2>Pontos em aberto</h2>${grade(pontos.map(d => cartaoRegistro(d)), 'Nada em aberto.')}
+    <h2>Tarefas</h2>${grade(tarefas.map(d => cartaoRegistro(d)), 'Nenhuma tarefa aberta.')}
+    ${pode('indicadores') && inds.length ? `<h2>Indicadores</h2>${grade(inds.map(d => cartaoRegistro(d, `<div class="num">${esc(d.ultimo_valor ?? '—')}<span style="font-size:14px"> ${esc(d.unidade || '')}</span></div>`)), '')}` : ''}`;
+  },
+  equipe() { return grade((ctx.equipe || []).map(p => `<div class="cartao"><h3>${esc(p.nome)}</h3><p>${esc(p.funcao || '')}${p.area ? ' · ' + esc(p.area) : ''}</p>
+      <div>${p.tem_acesso ? `<span class="chip concluido">usa a Clara</span><span class="chip">${esc(p.perfil)}</span>` : '<span class="chip aberto">sem acesso ainda</span>'}</div>
+      ${Array.isArray(p.responsabilidades) && p.responsabilidades.length ? `<ul>${p.responsabilidades.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`), 'Nenhuma pessoa cadastrada.'); },
+  processos() { return grade([...col('processos'), ...col('procedimentos_rascunho'), ...col('fichas_mapeamento'), ...col('dependencia_proprietario'), ...col('risco_continuidade')].map(d => cartaoRegistro(d)), 'Nenhum processo cadastrado.'); },
+  rotinas() { return grade([...col('tarefas'), ...col('rotinas_rascunho')].map(d => cartaoRegistro(d)), 'Nenhuma tarefa ou rotina.'); },
+  indicadores() { return grade(col('indicadores').map(d => cartaoRegistro(d, `<div class="num">${esc(d.ultimo_valor ?? '—')}<span style="font-size:14px"> ${esc(d.unidade || '')}</span></div>${d.situacao ? `<p>${esc(d.situacao)}</p>` : ''}`)), 'Nenhum indicador.'); },
+  crescimento() { return grade(col('oportunidades').map(d => cartaoRegistro(d)), 'Nenhuma oportunidade registrada.'); },
+  diario() { return grade(dados.diario.map(e => `<div class="cartao"><div class="linha"><h3>${esc(e.assunto)}</h3><span class="tempo">${esc(dataBR(e.registrado_em))}</span></div>
+      <div>${(e.topicos || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div><p>${esc(e.resumo)}</p></div>`), 'O Diário ainda está vazio.'); },
+  memoria() { return grade(dados.memoria.map(m => `<div class="cartao"><div class="linha"><h3>${esc(m.assunto)}</h3><span class="tempo">${esc(dataBR(m.criado_em))}</span></div>
+      <div><span class="chip">${esc(m.visibilidade)}</span></div><pre>${esc(JSON.stringify(m.resumo, null, 2))}</pre></div>`), 'Nenhuma memória guardada ainda.'); },
+  acessos() {
+    const a = dados.acessos || {};
+    return `<h2>Quem usa a Clara</h2>${grade((a.acessos || []).map(x => `<div class="cartao"><h3>${esc(x.nome || x.email)}</h3><p>${esc(x.email)}</p><div><span class="chip">${esc(x.perfil)}</span><span class="chip ${x.ativo ? 'concluido' : 'aberto'}">${x.ativo ? 'ativo' : 'desativado'}</span></div></div>`), 'Ninguém ainda.')}
+      <h2>Convites pendentes</h2>${grade((a.convites_pendentes || []).map(x => `<div class="cartao"><h3>${esc(x.email)}</h3><p>${esc(x.perfil)} · ${esc(nomePessoa(x.pessoa_id))}</p></div>`), 'Nenhum convite pendente.')}
+      <h2>Pessoas do mapeamento sem acesso</h2>${grade((a.pessoas_sem_acesso || []).map(x => `<div class="cartao"><h3>${esc(x.nome)}</h3><p>${esc(x.funcao || '')}</p></div>`), 'Todos têm acesso.')}
+      <p class="tempo">Para dar ou tirar acesso, peça à Clara (ex.: "dá acesso para o Vinícius").</p>`;
+  }
+};
+const areaDaAba = { hoje: 'hoje', equipe: 'equipe', processos: 'processos', rotinas: 'rotinas', indicadores: 'indicadores', crescimento: 'crescimento', diario: 'diario', memoria: 'memoria' };
+
+function montarAbas() {
+  const visiveis = ABAS.filter(([k]) => k === 'acessos' ? ctx.eu.permissoes === 'total' : pode(areaDaAba[k]));
+  if (!visiveis.some(([k]) => k === abaAtual)) abaAtual = visiveis[0]?.[0];
+  $('abas').innerHTML = visiveis.map(([k, n]) => `<button role="tab" aria-selected="${k === abaAtual}" data-aba="${k}">${n}</button>`).join('');
+  $('abas').hidden = false;
+}
+function render() {
+  montarAbas();
+  $('conteudo').innerHTML = `<div class="aviso">Painel de consulta. Para criar ou alterar algo, peça à Clara no Claude: tudo passa por confirmação e fica registrado. <span class="tempo">Atualizado ${esc(dataBR(new Date()))}</span></div>` + (VIEWS[abaAtual]?.() ?? '');
+}
+$('abas').addEventListener('click', e => { const b = e.target.closest('button[data-aba]'); if (!b) return; abaAtual = b.dataset.aba; try { localStorage.setItem('clara-aba', abaAtual); } catch {} render(); });
+
+async function abrirEmpresa(id) {
+  const { data, error } = await sb.rpc('clara_contexto', id ? { p_empresa: id } : {});
+  if (error) { $('conteudo').innerHTML = `<p class="vazio">Não foi possível abrir: ${esc(error.message)}</p>`; return; }
+  if (data.escolher_empresa) {
+    if (!data.empresas.length) { $('conteudo').innerHTML = '<p class="vazio">Seu login ainda não está vinculado a nenhuma empresa.</p>'; return; }
+    $('sel-empresa').innerHTML = data.empresas.map(e => `<option value="${esc(e.empresa_id)}">${esc(e.nome)}</option>`).join('');
+    $('sel-empresa').hidden = false;
+    let salvo; try { salvo = localStorage.getItem('clara-empresa'); } catch {}
+    const escolha = data.empresas.find(e => e.empresa_id === salvo)?.empresa_id || data.empresas[0].empresa_id;
+    $('sel-empresa').value = escolha; return abrirEmpresa(escolha);
+  }
+  ctx = data; empresaId = data.empresa.id;
+  if ((data.outras_empresas || []).length) {
+    $('sel-empresa').innerHTML = data.outras_empresas.map(e => `<option value="${esc(e.empresa_id)}">${esc(e.nome)}</option>`).join('');
+    $('sel-empresa').value = empresaId; $('sel-empresa').hidden = false;
+  }
+  $('empresa-nome').textContent = data.empresa.nome;
+  $('quem').textContent = `${data.eu.pessoa?.nome || data.eu.email} · ${data.eu.perfil}`;
+  $('b-sair').hidden = false;
+  $('conteudo').innerHTML = '<p class="vazio">Carregando…</p>';
+  await carregar(); render();
+}
+$('sel-empresa').addEventListener('change', e => { try { localStorage.setItem('clara-empresa', e.target.value); } catch {} abrirEmpresa(e.target.value); });
+$('b-sair').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+(async () => {
+  try { abaAtual = localStorage.getItem('clara-aba') || 'hoje'; } catch {}
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $('entrar').hidden = false; return; }
+  abrirEmpresa();
+})();
+</script>
+</body>
+</html>
