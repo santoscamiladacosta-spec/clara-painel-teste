@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Clara | Acesso</title>
+<style>
+:root{--navy:#102447;--ouro:#C8A23A;--fundo:#f4f5f8;--cartao:#fff;--texto:#1d2633;--suave:#5b6675;--borda:#d9dee6;--erro:#a3261b;--ok:#1e6b3c}
+@media (prefers-color-scheme:dark){:root{--fundo:#0d1a2e;--cartao:#142540;--texto:#eef2f7;--suave:#b7c2d1;--borda:#2c4363;--navy:#e9eef6}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:var(--fundo);color:var(--texto);font:16px/1.5 "Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+main{width:100%;max-width:440px;background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:32px 28px;box-shadow:0 16px 48px rgba(16,36,71,.08)}
+.marca{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ouro);font-weight:600}
+h1{margin:6px 0 4px;font-size:24px;color:var(--navy);line-height:1.25}
+p{margin:8px 0;color:var(--suave)}
+label{display:block;margin:16px 0 6px;font-weight:600;font-size:14px}
+input{width:100%;padding:12px 14px;font:inherit;border:1px solid var(--borda);border-radius:10px;background:transparent;color:var(--texto)}
+input:focus{outline:2px solid var(--ouro);outline-offset:1px}
+button{font:inherit;font-weight:600;padding:12px 18px;border-radius:10px;border:0;cursor:pointer;background:#102447;color:#fff;width:100%;margin-top:18px}
+button.sec{background:transparent;color:var(--navy);border:1px solid var(--borda)}
+button.link{background:none;color:var(--suave);width:auto;padding:6px 0;margin-top:12px;font-weight:500;text-decoration:underline}
+button:disabled{opacity:.55;cursor:wait}
+.lado{display:flex;gap:10px}.lado button{flex:1}
+.caixa{border:1px solid var(--borda);border-radius:12px;padding:14px 16px;margin:16px 0;background:rgba(200,162,58,.07)}
+.caixa b{color:var(--navy)}
+ul{margin:8px 0;padding-left:20px;color:var(--suave)}
+#msg{min-height:1.5em;margin-top:14px;font-size:14px}
+#msg.erro{color:var(--erro)}#msg.ok{color:var(--ok)}
+[hidden]{display:none!important}
+small{color:var(--suave)}
+</style>
+</head>
+<body>
+<main>
+  <div class="marca">Clara · Gerente de Operações</div>
+  <h1 id="titulo">Acesso à Clara</h1>
+  <p id="sub">Verificando…</p>
+
+  <form id="f-login" hidden>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password" required>
+    <button type="submit">Entrar</button>
+    <button type="button" class="link" id="b-esqueci">Primeiro acesso ou esqueci minha senha</button>
+  </form>
+
+  <form id="f-senha" hidden>
+    <label for="nova">Crie sua senha (mínimo 8 caracteres)</label>
+    <input id="nova" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="nova2">Repita a senha</label>
+    <input id="nova2" type="password" autocomplete="new-password" minlength="8" required>
+    <button type="submit">Salvar senha</button>
+  </form>
+
+  <section id="s-consentir" hidden>
+    <div class="caixa">
+      <p style="margin-top:0"><b id="cliente">Aplicativo</b> quer conectar a Clara à sua conta <b id="quem"></b>.</p>
+      <p>Com isso, a Clara poderá, <b>em seu nome e somente dentro das suas permissões</b>:</p>
+      <ul>
+        <li>consultar o painel, a memória e o Diário da sua empresa;</li>
+        <li>propor atualizações (que só são gravadas com a sua confirmação);</li>
+        <li>enviar e receber recados da equipe.</li>
+      </ul>
+    </div>
+    <p><small>Autorize somente se foi você quem iniciou a conexão agora. Você pode desconectar a qualquer momento nas configurações do Claude.</small></p>
+    <div class="lado">
+      <button class="sec" id="b-negar" type="button">Não autorizar</button>
+      <button id="b-autorizar" type="button">Autorizar</button>
+    </div>
+  </section>
+
+  <section id="s-pronto" hidden>
+    <div class="caixa" id="pronto-info"></div>
+    <p>Agora volte ao Claude e conecte a Clara (o passo a passo está no seu treinamento).</p>
+    <button class="sec" id="b-sair" type="button">Sair</button>
+  </section>
+
+  <div id="msg" role="status" aria-live="polite"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.min.js"></script>
+<script>
+const CLARA = {
+  url: 'https://tkdzoxuspcbsnhmzxypd.supabase.co',
+  chavePublica: 'sb_publishable_C5QQEoKHTKtCUL7gUAaq8w_Wsqz6en8'
+};
+const $ = id => document.getElementById(id);
+const mostrar = (...ids) => ['f-login','f-senha','s-consentir','s-pronto'].forEach(i => $(i).hidden = !ids.includes(i));
+const msg = (t, tipo='') => { $('msg').textContent = t; $('msg').className = tipo; };
+const params = new URLSearchParams(location.search);
+const hash = new URLSearchParams(location.hash.slice(1));
+const authorizationId = params.get('authorization_id');
+const tipoLink = hash.get('type');                 // invite | recovery | signup | magiclink
+const erroLink = hash.get('error_description');
+const sb = supabase.createClient(CLARA.url, CLARA.chavePublica, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'implicit' } });
+
+function traduzir(e){
+  const m = String(e?.message || e || '');
+  if (/Invalid login credentials/i.test(m)) return 'E-mail ou senha incorretos.';
+  if (/Email not confirmed/i.test(m)) return 'Confirme seu e-mail pelo link que você recebeu.';
+  if (/expired|invalid/i.test(m) && /link|token|otp/i.test(m)) return 'Este link expirou. Peça um novo em "Primeiro acesso ou esqueci minha senha".';
+  if (/Password should be/i.test(m)) return 'A senha precisa ter pelo menos 8 caracteres.';
+  if (/rate limit/i.test(m)) return 'Muitas tentativas seguidas. Aguarde alguns minutos.';
+  return 'Não foi possível concluir: ' + m;
+}
+
+async function consentimento(){
+  $('titulo').textContent = 'Conectar a Clara';
+  const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authorizationId);
+  if (error) { mostrar(); $('sub').textContent = ''; msg(traduzir(error), 'erro'); return; }
+  if (data && !data.authorization_id && data.redirect_url) { location.assign(data.redirect_url); return; } // já autorizado antes
+  const { data: { user } } = await sb.auth.getUser();
+  $('cliente').textContent = data?.client?.name || data?.client?.client_name || 'Um aplicativo';
+  $('quem').textContent = user?.email || '';
+  $('sub').textContent = 'Confira antes de autorizar.';
+  mostrar('s-consentir');
+}
+
+async function pronto(){
+  const { data: { user } } = await sb.auth.getUser();
+  let info = `<p style="margin-top:0">Acesso ativo para <b>${user.email.replace(/[<>&]/g,'')}</b>.</p>`;
+  try {
+    const { data } = await sb.rpc('clara_contexto', {});
+    if (data?.empresa) info += `<p>Empresa: <b>${data.empresa.nome.replace(/[<>&]/g,'')}</b><br>Perfil: <b>${data.eu.perfil}</b>${data.eu.pessoa?.nome ? `<br>Você está cadastrada(o) como: <b>${data.eu.pessoa.nome.replace(/[<>&]/g,'')}</b>` : ''}</p>`;
+    else if (data?.empresas?.length) info += `<p>Empresas com acesso: <b>${data.empresas.map(e => e.nome.replace(/[<>&]/g,'')).join(', ')}</b></p>`;
+    else info += `<p>Seu login ainda não está vinculado a nenhuma empresa. Fale com quem enviou o convite.</p>`;
+  } catch {}
+  $('pronto-info').innerHTML = info;
+  $('titulo').textContent = 'Tudo certo';
+  $('sub').textContent = '';
+  mostrar('s-pronto');
+}
+
+async function seguir(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $('titulo').textContent = authorizationId ? 'Conectar a Clara' : 'Acesso à Clara'; $('sub').textContent = 'Entre com o e-mail cadastrado pela sua empresa.'; mostrar('f-login'); return; }
+  if (authorizationId) return consentimento();
+  return pronto();
+}
+
+$('f-login').addEventListener('submit', async e => {
+  e.preventDefault(); const b = e.submitter; b.disabled = true; msg('Entrando…');
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('senha').value });
+  $('senha').value = ''; b.disabled = false;
+  if (error) return msg(traduzir(error), 'erro');
+  msg(''); seguir();
+});
+
+$('b-esqueci').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  if (!email) { msg('Digite seu e-mail acima e clique novamente.', 'erro'); $('email').focus(); return; }
+  const volta = location.origin + location.pathname + (authorizationId ? `?authorization_id=${encodeURIComponent(authorizationId)}` : '');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: volta });
+  msg(error ? traduzir(error) : 'Se este e-mail estiver cadastrado, você receberá um link para criar sua senha.', error ? 'erro' : 'ok');
+});
+
+$('f-senha').addEventListener('submit', async e => {
+  e.preventDefault();
+  if ($('nova').value !== $('nova2').value) return msg('As senhas não conferem.', 'erro');
+  const b = e.submitter; b.disabled = true; msg('Salvando…');
+  const { error } = await sb.auth.updateUser({ password: $('nova').value });
+  b.disabled = false; $('nova').value = $('nova2').value = '';
+  if (error) return msg(traduzir(error), 'erro');
+  history.replaceState({}, '', location.pathname + location.search);
+  msg('Senha criada.', 'ok'); seguir();
+});
+
+$('b-autorizar').addEventListener('click', async () => {
+  $('b-autorizar').disabled = $('b-negar').disabled = true; msg('Autorizando…');
+  const { error } = await sb.auth.oauth.approveAuthorization(authorizationId);
+  if (error) { $('b-autorizar').disabled = $('b-negar').disabled = false; msg(traduzir(error), 'erro'); }
+});
+$('b-negar').addEventListener('click', async () => {
+  $('b-autorizar').disabled = $('b-negar').disabled = true;
+  const { error } = await sb.auth.oauth.denyAuthorization(authorizationId);
+  if (error) msg(traduzir(error), 'erro');
+});
+$('b-sair').addEventListener('click', async () => { await sb.auth.signOut(); location.replace(location.pathname); });
+
+(async () => {
+  if (erroLink) { mostrar('f-login'); $('sub').textContent = ''; msg(traduzir(erroLink), 'erro'); return; }
+  if (tipoLink === 'invite' || tipoLink === 'recovery') {
+    await sb.auth.getSession();  // processa o token do link
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) { $('titulo').textContent = tipoLink === 'invite' ? 'Bem-vinda(o) à Clara' : 'Nova senha'; $('sub').textContent = 'Para começar, crie a sua senha de acesso.'; mostrar('f-senha'); return; }
+  }
+  seguir();
+})();
+</script>
+</body>
+</html>
