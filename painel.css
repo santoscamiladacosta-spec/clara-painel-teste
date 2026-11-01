@@ -224,3 +224,75 @@ details.ch-proc[open]>summary .ch-chev{transform:rotate(45deg)}
 .ch-lista small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 @media(min-width:900px){.ch-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.ch-col,.ch-col.ch-larga{max-width:100%}.ch-saud h1{font-size:22px!important}}
+
+/* ───────── Playbook Operacional ───────── */
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#17243a}
+.pb-busca{width:100%;max-width:460px;margin:14px 0 4px}
+.pb-lista{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+details.pb-proc{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+details.pb-proc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:13px;padding:15px 16px;-webkit-tap-highlight-color:transparent}
+details.pb-proc>summary::-webkit-details-marker{display:none}
+details.pb-proc>summary:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+details.pb-proc[open]{box-shadow:0 6px 22px #14243b0f}
+details.pb-proc[open]>summary .ch-chev{transform:rotate(45deg)}
+.pb-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#eef3f8;color:var(--blue);font-size:19px}
+.pb-tit{flex:1;min-width:0}
+.pb-tit b{display:block;font-size:14.5px;font-weight:650;line-height:1.35}
+.pb-tit small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+.pb-corpo{padding:4px 16px 18px;border-top:1px solid #eef0f3}
+.pb-obj{font-size:13.5px;color:var(--muted);line-height:1.6;margin:13px 0}
+.pb-etapas{list-style:none;margin:14px 0 0;padding:0 0 0 13px;border-left:2px solid #dde6ee;display:flex;flex-direction:column;gap:11px}
+.pb-etapas li{display:flex;gap:12px;align-items:flex-start;position:relative}
+.pb-num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:750;margin-left:-26px}
+.pb-etxt{flex:1;min-width:0;background:#f7fafc;border:1px solid #eaeff4;border-radius:10px;padding:12px 14px;margin-left:6px}
+.pb-etxt b{font-size:14px;font-weight:620;line-height:1.4}
+.pb-etxt p{margin:5px 0 0;font-size:12.5px;color:var(--muted);line-height:1.55}
+.pb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.pb-fer{font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.pb-exc{margin-top:13px;background:#fff4e2;border-radius:10px;padding:13px 15px;color:#8c5e26}
+.pb-exc b{display:block;font-size:12.5px;margin-bottom:5px}
+.pb-exc p{margin:0 0 5px;font-size:13px;line-height:1.55}
+.pb-rod{font-size:11px;color:var(--muted);margin:14px 0 0}
+@media(max-width:700px){.pb-ic{display:none}details.pb-proc>summary{padding:13px}.pb-etapas{padding-left:11px}}
+
+/* ───────── PDF do Manual Vivo ───────── */
+@media print{
+  @page{margin:16mm 14mm}
+  body{background:#fff!important}
+  .v3-print{padding:0!important;color:#1b2a3d;font-family:Inter,'Segoe UI',Arial,sans-serif!important}
+  .pr-capa{page-break-after:always;padding-top:30mm}
+  .pr-marca{font-size:40px;font-weight:800;letter-spacing:-1.5px;color:#102447}
+  .pr-marca span{color:#c8a23a}
+  .pr-sob{margin:2px 0 46px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7d8a9c}
+  .pr-capa h1{font-size:44px;margin:0;letter-spacing:-1.4px;color:#102447}
+  .pr-emp{font-size:17px;color:#46586e;margin:6px 0 34px}
+  .pr-meta{display:flex;gap:34px;border-top:2px solid #c8a23a;border-bottom:1px solid #dde3ea;padding:16px 0;margin-bottom:20px}
+  .pr-meta b{display:block;font-size:21px;color:#102447;letter-spacing:-.5px}
+  .pr-meta small{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#7d8a9c}
+  .pr-nota{font-size:12px;color:#5d6b7d;line-height:1.6;max-width:120mm}
+  .pr-sumario{margin-top:34px}
+  .pr-sumario b{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#7d8a9c}
+  .pr-sumario ol{margin:12px 0 0;padding-left:18px}
+  .pr-sumario li{font-size:13px;font-weight:600;color:#1b2a3d;margin-bottom:9px}
+  .pr-sumario li span{display:block;font-weight:400;font-size:11px;color:#7d8a9c;margin-top:2px}
+  .pr-proc{page-break-before:always;page-break-inside:auto}
+  .pr-proc header{border-bottom:2px solid #c8a23a;padding-bottom:11px;margin-bottom:15px}
+  .pr-kick{font-size:9px;letter-spacing:1.8px;color:#a0843f;font-weight:700}
+  .pr-proc h2{font-size:24px;margin:5px 0 0;color:#102447;letter-spacing:-.6px}
+  .pr-obj{font-size:12.5px;color:#5d6b7d;margin:7px 0 0;line-height:1.55}
+  .pr-quem{display:flex;gap:28px;background:#f4f7fa;border-radius:7px;padding:12px 15px;margin-bottom:18px}
+  .pr-quem small{display:block;font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#7d8a9c}
+  .pr-quem b{font-size:12.5px;color:#1b2a3d}
+  .pr-etapas{counter-reset:pr;list-style:none;margin:0;padding:0}
+  .pr-etapas li{counter-increment:pr;position:relative;padding:0 0 13px 32px;border-left:2px solid #dbe4ec;margin-left:12px;page-break-inside:avoid}
+  .pr-etapas li:last-child{border-left-color:transparent}
+  .pr-etapas li::before{content:counter(pr);position:absolute;left:-13px;top:-2px;width:24px;height:24px;border-radius:50%;background:#2f6fb0;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+  .pr-etapas li b{font-size:13px;color:#1b2a3d}
+  .pr-etapas li p{margin:4px 0 0;font-size:11.5px;color:#5d6b7d;line-height:1.5}
+  .pr-fer{font-size:11.5px;color:#5d6b7d;margin:14px 0 0}
+  .pr-exc{background:#fdf6e8;border-left:3px solid #c8a23a;padding:11px 14px;margin:14px 0 0;page-break-inside:avoid}
+  .pr-exc b{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#8c6a22;margin-bottom:4px}
+  .pr-exc p{margin:0 0 4px;font-size:12px;color:#5b4a22;line-height:1.55}
+  .pr-fim{font-size:12px;color:#1b2a3d;margin:14px 0 0}
+  .pr-apr{font-size:9.5px;color:#93a0af;margin:20px 0 0;border-top:1px solid #e4e9ef;padding-top:8px}
+}

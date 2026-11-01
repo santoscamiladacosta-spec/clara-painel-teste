@@ -36,7 +36,7 @@ const dtBR = d => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', 
 const slug = t => String(t || 'item').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50) + '-' + Math.random().toString(36).slice(2,6);
 const concluida = s => ['concluida','concluída','concluido','concluído','feito','feita','finalizada','entregue'].includes(String(s||'').toLowerCase());
 
-let ctx, E, D = {}, aba = 'hoje', subProc = 'mapa';
+let ctx, E, D = {}, aba = 'hoje', subProc = 'mapa', buscaProc = '';
 const ABAS = [
   ['hoje','◫','HOJE','hoje'], ['processos','⇄','PROCESSOS','processos'], ['indicadores','◉','INDICADORES','indicadores'],
   ['rotinas','☑','ROTINAS','rotinas'], ['diario','▤','DIÁRIO DE BORDO','diario'], ['crescimento','↗','CRESCIMENTO','crescimento'],
@@ -379,9 +379,72 @@ function vProcessos() {
   return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Processos', 'Da visão geral ao procedimento que a equipe executa.', `${pode('processos','criar') ? `<button class="btn" onclick="formProcesso()">+ Novo processo</button>` : ''}<button class="btn light" onclick="exportarManual()">⤓ Exportar Manual Vivo (PDF)</button>`) + `
   <div class="pillnav">${[['mapa','Mapa'],['descoberta',`Descoberta e validação (${grupos.descoberta.length})`],['manual',`Manual Vivo (${grupos.manual.length})`]].map(([k,n]) => `<button class="${subProc === k ? 'active' : ''}" onclick="subProc='${k}';render()">${n}</button>`).join('')}</div>
   ${subProc === 'descoberta' && aprova() && grupos.descoberta.some(p => p.status_doc === 'validacao') ? `<div class="v3-alert" style="margin-bottom:14px">${grupos.descoberta.filter(p => p.status_doc === 'validacao').length} processo(s) aguardando sua aprovação para entrar no Manual Vivo.</div>` : ''}
-  <div class="v3-mapgrid">${lista.map(p => `<div class="item click" onclick="verProcesso('${esc(p.id)}')"><div class="flex"><h4>${esc(p.nome)}</h4>${p.critico ? '<span class="tag warn">crítico</span>' : ''}</div>
-    <p>${esc(p.objetivo || '')}</p><div class="meta">${tagStatusDoc(p.status_doc)}${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}${notas[p.id] ? tagFaixa(notas[p.id].faixa) : ''}${p.versao ? `<span class="tag gray">v${esc(p.versao)}</span>` : ''}</div></div>`).join('') || vazio('Nenhum processo nesta visão.')}</div>`;
+  ${subProc === 'manual' ? playbook(grupos.manual) : `<div class="v3-mapgrid">${lista.map(p => `<div class="item click" onclick="verProcesso('${esc(p.id)}')"><div class="flex"><h4>${esc(p.nome)}</h4>${p.critico ? '<span class="tag warn">crítico</span>' : ''}</div>
+    <p>${esc(p.objetivo || '')}</p><div class="meta">${tagStatusDoc(p.status_doc)}${p.responsavel_pessoa_id ? `<span class="tag">${esc(nome(p.responsavel_pessoa_id))}</span>` : ''}${notas[p.id] ? tagFaixa(notas[p.id].faixa) : ''}${p.versao ? `<span class="tag gray">v${esc(p.versao)}</span>` : ''}</div></div>`).join('') || vazio('Nenhum processo nesta visão.')}</div>`}`;
 }
+
+// ───────── Playbook Operacional (Manual Vivo) ─────────
+const ICONES_PROC = ['◧','◨','◩','◪','◫','◬','◭','◮'];
+const etapaTexto = e => typeof e === 'string' ? e : (e.titulo || e.etapa || e.nome || '');
+const etapaDetalhe = e => typeof e === 'string' ? '' : (e.descricao || e.detalhe || e.como || '');
+const excecoesDe = p => [].concat(p.excecoes || p.excecao || []).filter(Boolean).map(x => typeof x === 'string' ? x : (x.descricao || JSON.stringify(x)));
+const ferramentasDe = p => [].concat(p.ferramentas || []).filter(Boolean).map(x => typeof x === 'string' ? x : (x.nome || ''));
+
+function playbook(procs) {
+  const q = buscaProc.trim().toLowerCase();
+  const casa = p => !q || [p.nome, p.objetivo, nome(p.responsavel_pessoa_id), ...(p.etapas || []).map(etapaTexto)].join(' ').toLowerCase().includes(q);
+  const lista = procs.filter(casa);
+  const versao = Math.max(1, ...procs.map(p => Number(p.versao) || 1));
+  return `<div class="pb-hero">
+    <div><div class="eyebrow" style="color:#d4ba87">${esc(ctx.empresa.nome.toUpperCase())} · CLARA</div>
+      <h2>Playbook Operacional</h2>
+      <p>Seus processos aprovados, organizados para consulta e treinamento da equipe.</p></div>
+    <button class="btn gold" onclick="exportarManual()">⤓ Exportar PDF</button>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="flex" style="align-items:flex-end;gap:14px;flex-wrap:wrap">
+      <div><h2 style="margin-bottom:3px">Biblioteca de processos</h2>
+        <p class="hint">${procs.length} ${procs.length === 1 ? 'procedimento' : 'procedimentos'} · Manual Vivo · versão ${versao}</p></div>
+      <div class="flexwrap"><button class="btn light sm" onclick="todosProcessos(true)">Expandir todos</button><button class="btn light sm" onclick="todosProcessos(false)">Recolher todos</button></div>
+    </div>
+    <input class="select pb-busca" id="pb-busca" type="text" placeholder="Buscar processo, responsável ou instrução…" value="${esc(buscaProc)}" oninput="buscaProc=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(()=>{render();const c=$('pb-busca');if(c){c.focus();c.setSelectionRange(c.value.length,c.value.length);}},260)">
+    <div class="pb-lista">${lista.map((p, i) => cardPlaybook(p, i)).join('') || vazio(q ? 'Nada encontrado para esta busca.' : 'Nenhum processo publicado ainda. Aprove um processo em Descoberta e validação para ele entrar aqui.')}</div>
+  </div>`;
+}
+
+function cardPlaybook(p, i) {
+  const etapas = p.etapas || [], exc = excecoesDe(p), fer = ferramentasDe(p);
+  const resp = nome(p.responsavel_pessoa_id) || 'A definir';
+  const subs = nome(p.substituto_pessoa_id) || p.substituto || 'A definir';
+  return `<details class="pb-proc">
+    <summary>
+      <span class="pb-ic">${ICONES_PROC[i % ICONES_PROC.length]}</span>
+      <span class="pb-tit"><b>${esc(p.nome)}</b><small>${p.critico ? 'Crítico' : 'Operação'} · ${etapas.length} ${etapas.length === 1 ? 'etapa' : 'etapas'} · Responsável: ${esc(resp)}</small></span>
+      <span class="tag ok">Manual Vivo · v${esc(p.versao || 1)}</span>
+      <span class="ch-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="pb-corpo">
+      ${p.objetivo ? `<p class="pb-obj">${esc(p.objetivo)}</p>` : ''}
+      ${p.gatilho ? `<p class="hint"><b>Começa quando:</b> ${esc(p.gatilho)}</p>` : ''}
+      <ol class="pb-etapas">${etapas.map((e, n) => `<li><span class="pb-num">${n + 1}</span>
+        <div class="pb-etxt"><b>${esc(etapaTexto(e))}</b>${etapaDetalhe(e) ? `<p>${esc(etapaDetalhe(e))}</p>` : ''}
+        <div class="pb-chips"><span class="tag">Responsável: ${esc(resp)}</span><span class="tag gray">Substituto: ${esc(subs)}</span></div></div></li>`).join('')}</ol>
+      ${fer.length ? `<p class="pb-fer"><b>Ferramentas:</b> ${fer.map(esc).join(' · ')}</p>` : ''}
+      ${exc.length ? `<div class="pb-exc"><b>Cuidados e exceções</b>${exc.map(x => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
+      ${p.decisao_proprietaria ? `<div class="pb-exc"><b>Quem decide</b><p>${esc(p.decisao_proprietaria)}</p></div>` : ''}
+      ${p.criterio_conclusao ? `<p class="hint"><b>Concluído quando:</b> ${esc(p.criterio_conclusao)}</p>` : ''}
+      <p class="pb-rod">Aprovado${p.aprovado_em ? ' em ' + dBR(p.aprovado_em) : ''}${p.aprovado_por ? ' por ' + esc(p.aprovado_por) : ''}</p>
+      <div class="flexwrap" style="margin-top:12px">
+        <button class="btn light sm" onclick="exportarManual('${esc(p.id)}')">⤓ Exportar este processo</button>
+        <button class="btn light sm" onclick="irPara('hoje')">Executar agora →</button>
+        ${aprova() ? `<button class="btn light sm" onclick="verProcesso('${esc(p.id)}')">Abrir ficha</button>` : ''}
+      </div>
+    </div>
+  </details>`;
+}
+
+function todosProcessos(abrir) { document.querySelectorAll('details.pb-proc').forEach(d => d.open = abrir); }
 function verProcesso(id) {
   const p = col('processos').find(x => x.id === id); const lst = (rot, a) => Array.isArray(a) && a.length ? `<h3 style="margin-top:14px">${rot}</h3>${a.map((x,i) => `<div class="v3-step"><b>${rot === 'Etapas' ? (i+1) + '. ' : ''}</b>${esc(x)}</div>`).join('')}` : '';
   const podeEditar = p.status_doc === 'publicado' ? aprova() : pode('processos','editar');
@@ -421,14 +484,42 @@ function salvarProcesso(id) {
   if (id) { const p = col('processos').find(x => x.id === id); return editar(p, d, 'Processo atualizado pelo painel'); }
   return criar('processos', { id: 'proc-' + slug(d.nome), status_doc: 'descoberta', versao: 0, ...d }, 'Processo criado pelo painel');
 }
-function exportarManual() {
-  const procs = col('processos').filter(p => p.status_doc === 'publicado');
+function exportarManual(soEste) {
+  let procs = col('processos').filter(p => p.status_doc === 'publicado');
+  if (soEste) procs = procs.filter(p => p.id === soEste);
   if (!procs.length) return toast('Ainda não há processos publicados no Manual Vivo.');
-  $('print').innerHTML = `<h1>Manual Vivo · ${esc(ctx.empresa.nome)}</h1><p>Procedimentos oficiais aprovados · exportado em ${dtBR(new Date())} por ${esc(ctx.eu.pessoa?.nome || ctx.eu.email)}</p>` +
-    procs.map(p => `<article><h2>${esc(p.nome)} <small>v${esc(p.versao || 1)}</small></h2><p>${esc(p.objetivo || '')}</p><p><b>Responsável:</b> ${esc(nome(p.responsavel_pessoa_id) || '—')} · <b>Substituto:</b> ${esc(nome(p.substituto_pessoa_id) || '—')}</p>${p.gatilho ? `<p><b>Início:</b> ${esc(p.gatilho)}</p>` : ''}${(p.etapas || []).map((e,i) => `<div class="v3-step"><b>${i+1}.</b> ${esc(e)}</div>`).join('')}${[].concat(p.excecoes || []).length ? `<p><b>Exceções:</b></p><ul>${[].concat(p.excecoes).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${p.criterio_conclusao ? `<p><b>Concluído quando:</b> ${esc(p.criterio_conclusao)}</p>` : ''}<p style="color:#777;font-size:11px">Aprovado ${p.aprovado_em ? 'em ' + dBR(p.aprovado_em) : ''} ${p.aprovado_por ? 'por ' + esc(p.aprovado_por) : ''}</p></article>`).join('');
-  setTimeout(() => window.print(), 100);
+  const versao = Math.max(1, ...procs.map(p => Number(p.versao) || 1));
+  $('print').innerHTML = `
+    <section class="pr-capa">
+      <div class="pr-marca">Clara<span>.</span></div>
+      <p class="pr-sob">Gerente de Operações</p>
+      <h1>Manual Vivo</h1>
+      <p class="pr-emp">${esc(ctx.empresa.nome)}</p>
+      <div class="pr-meta">
+        <div><b>${procs.length}</b><small>${procs.length === 1 ? 'procedimento' : 'procedimentos'}</small></div>
+        <div><b>v${esc(versao)}</b><small>versão do manual</small></div>
+        <div><b>${dBR(hojeISO())}</b><small>exportado em</small></div>
+      </div>
+      <p class="pr-nota">Procedimentos oficiais aprovados pela gestão. Exportado por ${esc(ctx.eu.pessoa?.nome || ctx.eu.email)}.</p>
+      ${procs.length > 1 ? `<div class="pr-sumario"><b>Neste manual</b><ol>${procs.map(p => `<li>${esc(p.nome)}<span>${(p.etapas || []).length} ${(p.etapas || []).length === 1 ? 'etapa' : 'etapas'} · ${esc(nome(p.responsavel_pessoa_id) || 'responsável a definir')}</span></li>`).join('')}</ol></div>` : ''}
+    </section>` +
+    procs.map(p => {
+      const exc = excecoesDe(p), fer = ferramentasDe(p);
+      const resp = nome(p.responsavel_pessoa_id) || 'A definir', subs = nome(p.substituto_pessoa_id) || p.substituto || 'A definir';
+      return `<article class="pr-proc">
+        <header><span class="pr-kick">${p.critico ? 'PROCESSO CRÍTICO' : 'PROCESSO'} · v${esc(p.versao || 1)}</span><h2>${esc(p.nome)}</h2>${p.objetivo ? `<p class="pr-obj">${esc(p.objetivo)}</p>` : ''}</header>
+        <div class="pr-quem"><div><small>Responsável</small><b>${esc(resp)}</b></div><div><small>Substituto</small><b>${esc(subs)}</b></div>${p.gatilho ? `<div><small>Começa quando</small><b>${esc(p.gatilho)}</b></div>` : ''}</div>
+        <ol class="pr-etapas">${(p.etapas || []).map(e => `<li><b>${esc(etapaTexto(e))}</b>${etapaDetalhe(e) ? `<p>${esc(etapaDetalhe(e))}</p>` : ''}</li>`).join('')}</ol>
+        ${fer.length ? `<p class="pr-fer"><b>Ferramentas:</b> ${fer.map(esc).join(' · ')}</p>` : ''}
+        ${exc.length ? `<div class="pr-exc"><b>Cuidados e exceções</b>${exc.map(x => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
+        ${p.decisao_proprietaria ? `<div class="pr-exc"><b>Quem decide</b><p>${esc(p.decisao_proprietaria)}</p></div>` : ''}
+        ${p.criterio_conclusao ? `<p class="pr-fim"><b>Concluído quando:</b> ${esc(p.criterio_conclusao)}</p>` : ''}
+        <p class="pr-apr">Aprovado${p.aprovado_em ? ' em ' + dBR(p.aprovado_em) : ''}${p.aprovado_por ? ' por ' + esc(p.aprovado_por) : ''} · ${esc(ctx.empresa.nome)}</p>
+      </article>`;
+    }).join('');
+  setTimeout(() => window.print(), 120);
+  return;
 }
-
 // ───────── INDICADORES ─────────
 const DIAS_FREQ = { diaria: 1, diária: 1, semanal: 7, quinzenal: 15, mensal: 30, bimestral: 60, trimestral: 90, semestral: 180, anual: 365 };
 const prazoFreq = i => DIAS_FREQ[String(i.frequencia || '').trim().toLowerCase()] || null;
