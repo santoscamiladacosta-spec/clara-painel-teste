@@ -165,6 +165,7 @@ function vHojeEquipe() {
   const meusInd = col('indicadores').filter(i => i.responsavel_pessoa_id === ctx.eu.pessoa_id);
   return `<div class="ch-col">
     ${saudar(ctx.eu.pessoa?.funcao || '')}
+    <div class="ch-acoes" style="margin-top:2px"><button class="ch-btn sec" onclick="formAviso()">Avisar a gestão</button></div>
     ${secao('Seu dia', tarefas.length ? (tarefas.length === 1 ? '1 aberta' : tarefas.length + ' abertas') : 'tudo em dia')}
     ${tarefas.length ? tarefas.map(cardTarefaEquipe).join('') : `<div class="ch-card ch-vazio">Nada no seu nome agora. Se travar em alguma coisa, avise a gestão pela Clara ou pelo processo abaixo.</div>`}
     ${recs.length ? secao('Recados') + recs.map(cardRecadoEquipe).join('') : ''}
@@ -206,6 +207,36 @@ function cardMedicao(i) {
 async function concluirRapido(id) {
   const t = col('tarefas').find(x => x.id === id); if (!t) return;
   await editar(t, { status: 'concluida', concluida_em: new Date().toISOString() }, 'Concluída pelo painel');
+}
+
+function formAviso() {
+  const outros = pessoas().filter(p => p.pessoa_id !== ctx.eu.pessoa_id);
+  abrirModal(`<h2>Avisar a gestão</h2>
+    <p class="v3-muted">A pessoa recebe na caixa dela, no painel e na Clara. Marcando urgente, também sai por e-mail na hora.</p>
+    ${sel('av-para', 'Para quem', outros.map(p => `<option value="${esc(p.pessoa_id)}">${esc(p.nome)}${p.funcao ? ' · ' + esc(p.funcao) : ''}</option>`).join('') || '<option value="">Ninguém cadastrado</option>')}
+    ${campo('av-ass', 'Assunto', '', 'text', 'placeholder="Ex.: falta de shampoo para os pedidos da semana"')}
+    ${campo('av-msg', 'O que está acontecendo e o que você precisa', '', 'textarea')}
+    <label style="display:flex;gap:9px;align-items:flex-start;margin:4px 0 2px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="av-urg" style="margin-top:3px">
+      <span><b>Preciso de uma decisão agora.</b><br><span class="v3-muted">Use quando esperar até amanhã custa caro. O aviso sai por e-mail em poucos minutos.</span></span>
+    </label>
+    <div class="acts"><button class="v3-btn alt" onclick="fecharModal()">Cancelar</button><button class="v3-btn" onclick="enviarAviso()">Enviar</button></div>`);
+}
+
+async function enviarAviso() {
+  const para = val('av-para'), ass = val('av-ass'), msg = val('av-msg');
+  if (!para) return toast('Escolha quem precisa saber.');
+  if (!ass || !msg) return toast('Preencha o assunto e o que está acontecendo.');
+  const urgente = $('av-urg')?.checked;
+  const { error } = await sb.rpc('clara_recado_enviar', {
+    p_empresa: E, p_para_pessoa_id: para, p_tipo: urgente ? 'alerta' : 'recado',
+    p_assunto: ass, p_mensagem: msg, p_prioridade: urgente ? 'alta' : 'normal',
+    p_prazo: null, p_chave: 'painel-aviso-' + Date.now(),
+  });
+  if (error) return toast(traduz(error));
+  fecharModal();
+  toast(urgente ? nome(para) + ' foi avisado. O e-mail sai em minutos.' : nome(para) + ' vai ver no painel e no boletim.');
+  await carregar(); render();
 }
 
 function travarTarefa(id) {
@@ -311,6 +342,7 @@ function vHojeGestor() {
   const equipe = col('tarefas').filter(t => !concluida(t.status) && t.responsavel_pessoa_id && t.responsavel_pessoa_id !== ctx.eu.pessoa_id);
   return `<div class="ch-col ch-larga">
     ${saudar(ctx.eu.pessoa?.funcao || 'gestão')}
+    <div class="ch-acoes" style="margin-top:2px"><button class="ch-btn sec" onclick="formAviso()">Avisar alguém</button></div>
     ${travadas.length ? secao('Impedimentos da equipe', 'resolva primeiro') + travadas.map(cardImpedimento).join('') : ''}
     ${aprovar.length ? secao('Esperando a sua aprovação') + aprovar.map(p => `<article class="ch-card ch-alvo"><h4>${esc(p.nome)}</h4><p class="ch-de">Processo revisado, pronto para entrar no Manual Vivo</p><div class="ch-acoes"><button class="ch-btn" onclick="verProcesso('${esc(p.id)}')">Revisar e publicar</button></div></article>`).join('') : ''}
     ${secao('Suas tarefas', minhas.length ? minhas.length + ' abertas' : 'tudo em dia')}
