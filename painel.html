@@ -736,7 +736,29 @@ function caixaTopico(topico, itens) {
   </details>`;
 }
 
+const TOP_GLIFO = { 'Decisões': '◆', 'Avanços e conquistas': '★', 'Problemas e obstáculos': '▲', 'Mudanças operacionais': '⇄', 'Aprendizados': '✎', 'Planejamento': '◷' };
+let periodoDiario = 7;
+
+function destaque(e) {
+  const top = (e.topicos || [])[0] || 'Mudanças operacionais';
+  return `<article class="dq" data-top="${esc(TOP_COR[top] || 'gray')}">
+    <span class="dq-gl">${TOP_GLIFO[top] || '•'}</span>
+    <div class="dq-txt">
+      <b>${esc(e.assunto)}</b>
+      ${e.resumo ? `<p>${esc(e.resumo)}</p>` : ''}
+      <small>${esc(top)} · ${esc(rotuloDia(diaDe(e)).toLowerCase())}, ${horaBR(e.registrado_em)}</small>
+    </div>
+  </article>`;
+}
+
 function vDiario() {
+  const corte = periodoDiario ? new Date(Date.now() - periodoDiario * 864e5).toISOString() : '';
+  const noPeriodo = D.diario.filter(e => !corte || (e.registrado_em || '') >= corte);
+  const contar = top => noPeriodo.filter(e => (e.topicos || []).includes(top)).length;
+  const destaques = noPeriodo.filter(e => !movimentacao(e)).slice(0, 6);
+  const movs = noPeriodo.filter(movimentacao).length;
+  const rotuloPeriodo = periodoDiario === 7 ? 'nos últimos 7 dias' : periodoDiario === 30 ? 'nos últimos 30 dias' : 'desde o começo';
+
   const lista = D.diario.filter(e => !filtroDiario || (e.topicos || []).includes(filtroDiario));
   const porDia = {};
   for (const e of lista) (porDia[diaDe(e)] = porDia[diaDe(e)] || []).push(e);
@@ -744,15 +766,36 @@ function vDiario() {
   const porTopico = {};
   for (const e of lista) for (const x of (e.topicos || ['Sem tópico'])) (porTopico[x] = porTopico[x] || []).push(e);
 
-  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Diário de Bordo', 'O registro do que foi feito, para você acompanhar sem precisar perguntar.', pode('diario','criar') ? `<button class="btn" onclick="formDiario()">+ Novo registro</button>` : '') + `
-  <div class="flex" style="align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
-    <div class="pillnav" style="margin:0"><button class="${!filtroDiario ? 'active' : ''}" onclick="filtroDiario='';render()">Todos</button>${TOPICOS.map(x => `<button class="${filtroDiario === x ? 'active' : ''}" onclick="filtroDiario='${x}';render()">${x}</button>`).join('')}</div>
-    <div class="pillnav" style="margin:0"><button class="${modoDiario === 'dia' ? 'active' : ''}" onclick="modoDiario='dia';render()">Por dia</button><button class="${modoDiario === 'topico' ? 'active' : ''}" onclick="modoDiario='topico';render()">Por assunto</button></div>
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Diário de Bordo', 'O que está acontecendo na empresa, sem você precisar perguntar a ninguém.', pode('diario','criar') ? `<button class="btn" onclick="formDiario()">+ Novo registro</button>` : '') + `
+
+  <div class="panel dq-painel">
+    <div class="flex" style="align-items:center;flex-wrap:wrap;gap:12px">
+      <h2 style="margin:0">O que está acontecendo</h2>
+      <div class="pillnav" style="margin:0">${[[7,'7 dias'],[30,'30 dias'],[0,'Tudo']].map(([v,n]) => `<button class="${periodoDiario === v ? 'active' : ''}" onclick="periodoDiario=${v};render()">${n}</button>`).join('')}</div>
+    </div>
+
+    <div class="dq-res">${TOPICOS.map(x => ({ x, n: contar(x) })).filter(a => a.n).map(({ x, n }) => `<div class="dq-chip ${esc(TOP_COR[x] || 'gray')}"><span class="dq-gl">${TOP_GLIFO[x] || '•'}</span><b>${n}</b><small>${esc(x)}</small></div>`).join('') || `<p class="hint" style="margin:0">Nada registrado ${esc(rotuloPeriodo)}.</p>`}</div>
+
+    ${destaques.length ? `<div class="dq-lista">${destaques.map(destaque).join('')}</div>`
+      : `<div class="dq-calma"><b>Semana tranquila.</b><p>Nenhuma decisão, problema ou mudança registrada ${esc(rotuloPeriodo)}. Se aconteceu algo que vale guardar, registre — ou peça à Clara para registrar por você na conversa.</p></div>`}
+
+    ${movs ? `<p class="dq-nota">Além disso, ${movs} ${movs === 1 ? 'alteração de registro' : 'alterações de registro'} no painel ${esc(rotuloPeriodo)}. Estão no histórico abaixo.</p>` : ''}
   </div>
-  ${lista.length ? `<div class="dj-lista">${modoDiario === 'dia'
-      ? dias.map((d, i) => caixaDia(d, porDia[d], i === 0)).join('')
-      : TOPICOS.filter(x => porTopico[x]).map(x => caixaTopico(x, porTopico[x])).join('')}</div>`
-    : vazio(filtroDiario ? 'Nenhum registro neste assunto.' : 'Seu diário começa com um registro. Registre uma decisão, um avanço ou um aprendizado — ou deixe a Clara registrar sozinha quando um processo for publicado.')}
+
+  <details class="dj-historico">
+    <summary><b>Histórico completo</b><span>${D.diario.length} ${D.diario.length === 1 ? 'registro' : 'registros'} desde a instalação</span><span class="ch-chev" aria-hidden="true"></span></summary>
+    <div class="dj-hist-corpo">
+      <div class="flex" style="align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+        <div class="pillnav" style="margin:0"><button class="${!filtroDiario ? 'active' : ''}" onclick="filtroDiario='';render()">Todos</button>${TOPICOS.map(x => `<button class="${filtroDiario === x ? 'active' : ''}" onclick="filtroDiario='${x}';render()">${x}</button>`).join('')}</div>
+        <div class="pillnav" style="margin:0"><button class="${modoDiario === 'dia' ? 'active' : ''}" onclick="modoDiario='dia';render()">Por dia</button><button class="${modoDiario === 'topico' ? 'active' : ''}" onclick="modoDiario='topico';render()">Por assunto</button></div>
+      </div>
+      ${lista.length ? `<div class="dj-lista">${modoDiario === 'dia'
+          ? dias.map((d, n) => caixaDia(d, porDia[d], n === 0)).join('')
+          : TOPICOS.filter(x => porTopico[x]).map(x => caixaTopico(x, porTopico[x])).join('')}</div>`
+        : vazio(filtroDiario ? 'Nenhum registro neste assunto.' : 'Ainda não há registros.')}
+    </div>
+  </details>
+
   ${pode('memoria') ? `<div class="panel" style="margin-top:16px"><h2>Memória da empresa</h2><p class="hint">Sínteses guardadas nas conversas com a Clara.</p><div class="stack">${D.memoria.map(m => `<div class="item"><div class="flex"><h4>${esc(m.assunto)}</h4><span class="tag ${m.visibilidade === 'privada' ? 'gray' : 'blue'}">${esc(m.visibilidade)}</span></div><p>${esc(Object.values(m.resumo || {}).map(v => typeof v === 'string' ? v : JSON.stringify(v)).join(' · '))}</p><p class="v3-muted">${dtBR(m.criado_em)}</p></div>`).join('') || vazio('Nenhuma memória guardada ainda.')}</div></div>` : ''}`;
 }
 function formDiario() {
