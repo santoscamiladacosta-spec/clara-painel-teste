@@ -1,243 +1,28 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Clara | Acesso seguro</title>
-<style>:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#163353;background:#f2f5fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}body.panel-mode{display:block;padding:0;background:#f3f6fa}body.panel-mode .card{width:100%;max-width:none;padding:0;border:0;box-shadow:none;background:transparent}body.panel-mode .card>.brand,body.panel-mode .card>h1,body.panel-mode .card>#intro,body.panel-mode .card>small{display:none}body.panel-mode #signed{display:block}body.panel-mode #status{margin:0;border-radius:0}body.panel-mode #who,body.panel-mode #membership{margin:7px 20px}body.panel-mode #logout{width:auto;margin:7px 20px 12px}#demo-frame{display:block;width:100%;height:calc(100vh - 160px);min-height:650px;border:0}#demo-warning{padding:10px 20px;background:#fff4dc;color:#755214;font-weight:700}.card{background:white;border:1px solid #dde5f0;border-radius:22px;box-shadow:0 16px 45px #1736570d;width:min(100%,510px);padding:34px}.brand{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#193e6b;color:white;font-weight:800;font-size:26px}h1{font-size:27px;margin:18px 0 5px}p{color:#58718c;line-height:1.6}label{display:block;font-size:13px;font-weight:650;margin:16px 0 6px}input{width:100%;border:1px solid #c8d4e3;border-radius:10px;padding:12px;font:inherit}button{border:0;background:#193e6b;color:white;padding:12px 16px;border-radius:10px;cursor:pointer;font-weight:650;margin-top:18px;width:100%}button.secondary{background:#e9eff7;color:#193e6b;margin-top:9px}button:disabled{opacity:.55;cursor:wait}.status{padding:12px;background:#eef3fa;border-radius:10px;margin-top:15px;white-space:pre-wrap;font-size:14px}.warn{background:#fff4e8;color:#764315}.hidden{display:none}small{display:block;color:#71849a;margin-top:20px}
-
-/* Clara | identidade premium de acesso; fluxos JS preservados */
-:root{font-family:Inter,'Segoe UI',Arial,sans-serif;color:#182d46;background:#f4f5f6}
-body:not(.panel-mode){background:radial-gradient(circle at 10% 8%,#e3e7ec 0,transparent 37%),radial-gradient(circle at 95% 100%,#e9e2d8 0,transparent 32%),#f6f7f8}
-body:not(.panel-mode) .card{width:min(100%,530px);padding:43px;border-radius:24px;border:1px solid #e7e6e3;box-shadow:0 24px 75px #142a4119;background:#fffdfb}
-.brand{background:linear-gradient(145deg,#142741,#314a67);color:#d9bd91;border-radius:15px;box-shadow:0 8px 25px #11294220}
-h1{color:#142a44;letter-spacing:-.7px;font-size:28px}p{color:#68788a}label{color:#2e4157}
-input{border-radius:12px;border:1px solid #d8dce2;background:#fff;padding:14px}
-input:focus-visible,button:focus-visible{outline:3px solid #d0ad78;outline-offset:2px}
-button{background:#172e4a;border-radius:12px;padding:14px}button.secondary{background:#f0eee9;color:#253e59}
-.status{background:#f3f5f7;border:1px solid #e8ebee;color:#455970}
-body.panel-mode{background:#f5f6f8}
-
-#clara-equipe-panel .clara-permission-table{width:100%;border-collapse:collapse;min-width:550px;margin-top:8px}
-#clara-equipe-panel .clara-permission-table th,#clara-equipe-panel .clara-permission-table td{padding:8px 9px;border-bottom:1px solid #e2e7ed;text-align:center}
-#clara-equipe-panel .clara-permission-table td:first-child,#clara-equipe-panel .clara-permission-table th:first-child{text-align:left;font-weight:600}
-#clara-equipe-panel .clara-permission-table input[type=checkbox]{width:17px;height:17px;accent-color:#102447;cursor:pointer}
-#clara-equipe-panel .clara-permissions-help{font-size:13px;color:#64748b}
-#clara-equipe-panel .clara-permissions-wrap{overflow-x:auto}
-#clara-permission-editor:not([hidden]){display:flex!important}
-#clara-permission-editor .clara-permission-table{width:100%;border-collapse:collapse}
-#clara-permission-editor .clara-permission-table th,#clara-permission-editor .clara-permission-table td{padding:9px;border-bottom:1px solid #e2e7ed;text-align:center}
-#clara-permission-editor .clara-permission-table td:first-child{text-align:left}
-#clara-permission-editor input[type=checkbox]{width:17px;height:17px;accent-color:#102447}
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Clara — Painel de Gestão</title>
+<link rel="canonical" href="https://clara.empreendacomia.online/acesso.html">
+<meta http-equiv="refresh" content="0;url=acesso.html">
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#102447;color:#fff;
+       font-family:Inter,'Segoe UI',Arial,sans-serif;text-align:center;padding:24px}
+  .marca{font-size:30px;font-weight:800;letter-spacing:-1px}
+  .marca span{color:#c8a23a}
+  small{display:block;font-size:9.5px;letter-spacing:2.6px;color:#8ca2bf;margin-top:4px}
+  p{color:#b9c8db;font-size:14px;margin:26px 0 18px}
+  a{display:inline-block;background:#c8a23a;color:#17243a;text-decoration:none;font-weight:700;
+    font-size:14px;padding:13px 28px;border-radius:9px}
 </style>
-
-<style id="clara-login-visual-referencia-decola">
-:root{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;color:#202733;background:#F3F4F6}
-html,body,input,button{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important}
-body{background:linear-gradient(135deg,#f5f2ec,#f3f4f6 60%,#eaf0f8)}
-body.panel-mode{background:#f3f4f6}
-.card{border:1px solid #d8dce2;border-top:4px solid #C8A23A;border-radius:12px;box-shadow:0 14px 38px rgba(16,36,71,.10)}
-.brand{background:#102447;border-radius:10px;color:#C8A23A}
-h1{color:#102447}
-p{color:#66707C}
-input{border-color:#D8DCE2;border-radius:8px;background:#fff}
-button{background:#102447;border-radius:8px}
-button:hover{background:#16305e}
-button:focus-visible,input:focus-visible{outline:2px solid #C8A23A;outline-offset:2px}
-#demo-warning{background:#fff4d8;color:#765b21}
-</style>
-
-<style id="clara-tipografia-checklist-oficial">
-/* Tipografia do HTML Checklist Pré-Decolagem: mesma pilha e herança em todos os elementos. */
-html,body{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;-webkit-font-smoothing:antialiased;}
-body *,body *::before,body *::after{font-family:"Segoe UI",Aptos,Arial,Helvetica,sans-serif!important;}
-button,input,textarea,select,option{font-family:inherit!important;}
-</style>
-
-<style id="clara-tipografia-integral-checklist-v4">
-/* Mesma pilha tipográfica do Checklist Pré-Decolagem, em todos os elementos e estados. */
-:root { --clara-font-checklist: "Segoe UI", Aptos, Arial, Helvetica, sans-serif; font-family:var(--clara-font-checklist)!important; }
-html,body,body *,body *::before,body *::after,
-button,input,select,textarea,option,optgroup,label,table,thead,tbody,tfoot,tr,td,th,
-h1,h2,h3,h4,h5,h6,p,span,div,a,small,strong,b,em,i,ul,ol,li,svg text,
-[role="dialog"],[role="button"],[contenteditable],.v3-print,.v3-print * {
- font-family:var(--clara-font-checklist)!important;
-}
-@media print { html,body,body *,body *::before,body *::after,.v3-print,.v3-print * {font-family:var(--clara-font-checklist)!important;} }
-</style>
-<style id="clara-equipe-style">
-#clara-equipe-panel{margin:12px 20px 20px;padding:24px;background:white;border:1px solid #d9e0e7;border-radius:16px;color:#102447}
-#clara-equipe-panel h2{margin:0 0 10px}#clara-equipe-panel form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end}
-#clara-equipe-panel label{margin:0}#clara-equipe-panel button{width:auto;margin:0}#clara-equipe-panel table{width:100%;border-collapse:collapse;margin-top:15px;text-align:left}
-#clara-equipe-panel th,#clara-equipe-panel td{padding:10px;border-bottom:1px solid #e3e6ec;font-size:13px}#clara-equipe-panel .team-msg{padding:10px 0;white-space:pre-wrap}
-#clara-equipe-panel .check-admin{display:flex;gap:8px;align-items:center}#clara-equipe-panel .check-admin input{width:auto}
-
-</style>
-<style id="clara-painel-sem-cabecalho">
-body.panel-mode #status,body.panel-mode #who,body.panel-mode #membership,body.panel-mode #logout,body.panel-mode #demo-warning,body.panel-mode #clara-equipe-panel{display:none!important}
-body.panel-mode #demo-frame{height:100vh;min-height:100vh;width:100%;border:0}
-body.panel-mode #demo-area{margin:0;padding:0}
-
-/* Login mantém seu layout; após autenticação, somente o painel fica visível. */
-body.panel-mode{margin:0!important;padding:0!important;display:block!important;overflow:hidden!important;background:#fff!important}
-body.panel-mode main.card{margin:0!important;padding:0!important;width:100%!important;max-width:none!important;height:100vh!important;min-height:100vh!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:transparent!important}
-body.panel-mode main.card > :not(#signed){display:none!important}
-body.panel-mode #signed{display:block!important;margin:0!important;padding:0!important;height:100vh!important;min-height:100vh!important}
-body.panel-mode #signed > :not(#demo-area){display:none!important}
-body.panel-mode #demo-area{display:block!important;margin:0!important;padding:0!important;width:100%!important;height:100vh!important}
-body.panel-mode #demo-frame{display:block!important;width:100%!important;height:100vh!important;min-height:100vh!important;border:0!important;margin:0!important;padding:0!important}
-</style></head><body><main class="card"><span class="brand">C</span><h1>Clara — Gerente de Operações</h1><p id="intro">Acesso reservado a usuários convidados.</p><div id="status" class="status" role="status">Verificando configuração...</div>
-<section id="login" class="hidden"><form id="login-form"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="login-btn" type="submit">Entrar</button></form><button id="recover" class="secondary" type="button">Esqueci minha senha</button></section>
-<section id="setpass" class="hidden"><p>Defina sua senha de acesso.</p><form id="pass-form"><label for="new-password">Nova senha (mínimo 8 caracteres)</label><input id="new-password" type="password" autocomplete="new-password" required minlength="8"><button id="savepass" type="submit">Salvar senha</button></form></section>
-<section id="signed" class="hidden"><p id="who"></p><p id="membership">Consultando seu vínculo com a empresa...</p><button id="logout" class="secondary" type="button">Sair</button>
-<div id="clara-equipe-panel" class="hidden"><h2>Equipe e acessos</h2><p>Convide funcionários e defina quem pode administrar usuários. Somente proprietários podem conceder autorização administrativa.</p>
-<form id="clara-equipe-form"><label>Nome<input id="clara-equipe-nome" maxlength="120" required></label><label>E-mail<input id="clara-equipe-email" type="email" required></label>
-<label>Perfil<select id="clara-equipe-perfil"><option value="funcionario">Funcionário</option><option value="gestor">Gestor</option></select></label>
-<label class="check-admin"><input id="clara-equipe-admin" type="checkbox"> Autorizar gestão de usuários</label><div class="clara-permissions-wrap" style="grid-column:1/-1"><h3>Permissões por aba</h3><p class="clara-permissions-help">Marque as abas visíveis e as ações permitidas. Uma aba sem acesso fica oculta. As ações são independentes.</p><div id="clara-permissions-new"></div></div>
-<button id="clara-equipe-enviar" type="submit">Enviar convite</button></form>
-<div id="clara-permission-editor" hidden style="display:none;position:fixed;inset:0;z-index:2147483646;background:rgba(8,25,50,.58);align-items:center;justify-content:center;padding:18px"><div style="background:#fff;color:#102447;border-radius:16px;padding:22px;width:min(900px,96vw);max-height:90vh;overflow:auto;box-shadow:0 18px 55px #0004"><h2>Editar usuário e permissões</h2><p id="clara-edit-identity"></p><label>Perfil <select id="clara-edit-perfil"><option value="funcionario">Funcionário</option><option value="gestor">Gestor</option></select></label><label class="check-admin"><input type="checkbox" id="clara-edit-admin"> Autorizar gestão de usuários</label><h3>Permissões por aba</h3><div id="clara-permissions-edit"></div><div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px"><button type="button" id="clara-edit-cancel">Cancelar</button><button type="button" id="clara-edit-save">Salvar alterações</button></div></div></div><div id="clara-equipe-msg" class="team-msg" role="status"></div><button id="clara-equipe-recarregar" class="secondary" type="button" style="width:auto">Atualizar equipe</button>
-<div style="overflow-x:auto"><table><thead><tr><th>Usuário</th><th>Perfil</th><th>Acesso</th><th>Gestão de usuários</th><th>Ação</th></tr></thead><tbody id="clara-equipe-tbody"></tbody></table></div></div><div id="demo-area" class="hidden"><iframe id="demo-frame" title="Painel Clara V9" loading="lazy"></iframe></div></section>
-<small>Ambiente piloto. Nenhum dado real de cliente é incorporado a esta página.</small></main>
-<script src="./clara-data.js"></script><script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
-(async()=>{
-const $=id=>document.getElementById(id)||document.getElementById('demo-frame')?.contentDocument?.getElementById(id)||(teamPanel?.id===id?teamPanel:teamPanel?.querySelector('[id="'+id+'"]')), sections=['login','setpass','signed'];let client;let activeEmpresa=null,canManageTeam=false,isOwner=false;
-function show(id){sections.forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id!=='signed'){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');$('clara-equipe-panel').classList.add('hidden');$('demo-frame').removeAttribute('src')}}
-function msg(t,w=false){$('status').textContent=t;$('status').classList.toggle('warn',w)}
-const c=window.CLARA_CONFIG||{};
-if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(c.supabaseUrl||'')||!c.supabasePublishableKey||c.supabasePublishableKey.startsWith('COLE_')){msg('Configuração pendente: preencha config.js com a URL do projeto e a chave publicável do Supabase.',true);return}
-if(!window.supabase?.createClient){msg('Não foi possível carregar a biblioteca de autenticação. Confira a conexão.',true);return}
-client=window.supabase.createClient(c.supabaseUrl,c.supabasePublishableKey,{auth:{detectSessionInUrl:true,autoRefreshToken:true,persistSession:true}});
-const url=new URL(location.href),hash=new URLSearchParams(location.hash.slice(1));
-const err=url.searchParams.get('error_description')||hash.get('error_description');
-if(err)msg('O link de acesso falhou ou expirou. Solicite um novo convite ou recuperação de senha. '+err,true);
-let recovery=hash.get('type')==='recovery'||url.searchParams.get('type')==='recovery';
-async function refresh(){document.body.classList.remove('panel-mode');$('demo-area').classList.add('hidden');const oldFrame=$('demo-frame'),freshFrame=oldFrame.cloneNode(false);freshFrame.removeAttribute('src');oldFrame.replaceWith(freshFrame);window.CLARA_RUNTIME=null;const {data,error}=await client.auth.getSession();if(error){msg('Erro de sessão: '+error.message,true);show('login');return}
-const session=data.session;if(!session){show('login');if(!err)msg('Entre com seu e-mail e senha.');return}
-if(recovery){show('setpass');msg('Crie uma nova senha para concluir a recuperação.');return}
-show('signed');$('who').textContent='Conectada como '+session.user.email;
-const {data:members,error:memberErr}=await client.from('clara_membros').select('empresa_id,perfil,ativo,permissoes,clara_empresas(nome)').eq('usuario_id',session.user.id).eq('ativo',true);
-if(memberErr){$('membership').textContent='Não foi possível validar sua autorização. O painel permanecerá bloqueado.';msg('Acesso aos dados bloqueado até validar as permissões.',true);return}
-{
-  // O convite administrativo já autoriza o vínculo; o destinatário autenticado conclui a entrada.
-  const {data:pendingResponse,error:pendingError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'minhas_readmissoes',empresa_id:'00000000-0000-0000-0000-000000000000'}});
-  if(pendingError||pendingResponse?.sucesso!==true){
-   if(!members?.length){$('membership').textContent='Não foi possível verificar seu convite.';msg('Tente entrar novamente. Se o problema continuar, peça o reenvio do convite.',true);return;}
-  }else if(pendingResponse.pendentes?.length){
-   let linked=false;
-   for(const pending of pendingResponse.pendentes){
-    const {data:accepted,error:acceptError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'aceitar_readmissao',empresa_id:pending.empresa_id}});
-    if(!acceptError&&accepted?.sucesso){linked=true;continue;}
-    if(!members?.length){$('membership').textContent='Não foi possível concluir seu acesso.';msg(accepted?.erro||'Não foi possível concluir o convite. Tente novamente ou solicite um novo link.',true);return;}
-   }
-   if(linked){await refresh();return;}
-  }
-}
-if(!members?.length){$('membership').textContent='Não encontramos um convite ativo para esta conta.';msg('Solicite um convite para acessar a empresa.');return;}
-
-const requested=new URL(location.href).searchParams.get('empresa');
-const selected=members.find(m=>m.empresa_id===requested)||members[0];
-activeEmpresa=selected.empresa_id;isOwner=selected.perfil==='proprietario';
-canManageTeam=isOwner||(selected.perfil==='gestor'&&selected.permissoes?.administrar_usuarios===true);
-const {data:rows,error:loadError}=await client.from('clara_v9_modulos').select('area,conteudo,revisao').eq('empresa_id',activeEmpresa);
-if(loadError){msg('Não foi possível carregar os dados operacionais. '+loadError.message,true);return;}
-const company={id:activeEmpresa,nome:selected.clara_empresas.nome};
-let directory=[{id:session.user.id,name:session.user.user_metadata?.nome||session.user.user_metadata?.name||session.user.email,active:true}];
-if(canManageTeam){const {data:teamData,error:teamError}=await client.functions.invoke('clara-v9-equipe',{body:{acao:'listar',empresa_id:activeEmpresa}});if(!teamError&&teamData?.sucesso)directory=(teamData.membros||[]).filter(m=>m.ativo&&!m.removido).map(m=>({id:m.usuario_id,name:m.nome||m.email,active:true}));}
-window.CLARA_RUNTIME={member:selected,canManage:canManageTeam,directory,store:new ClaraData.Store(client,company,selected,rows),reload:refresh};
-$('membership').textContent='Empresa: '+company.nome;
-if(members.length>1){const picker=document.createElement('select');picker.setAttribute('aria-label','Empresa ativa');for(const m of members){const option=new Option(m.clara_empresas.nome,m.empresa_id);option.selected=m.empresa_id===activeEmpresa;picker.add(option);}picker.onchange=()=>{const next=new URL(location.href);next.searchParams.set('empresa',picker.value);location.assign(next);};$('membership').append(picker);}
-$('clara-equipe-admin').disabled=!isOwner;
-$('demo-frame').src='./painel-demonstracao.html?view='+crypto.randomUUID();
-$('demo-area').classList.remove('hidden');document.body.classList.add('panel-mode');msg('Dados da empresa carregados.');
-
-}
-window.addEventListener('message',async event=>{
- if(event.origin!==location.origin||event.source!==$('demo-frame').contentWindow)return;
- if(event.data?.tipo==='CLARA_LOGOUT'){await client.auth.signOut();history.replaceState({},'',location.pathname);recovery=false;await refresh();return;}
- if(event.data?.tipo!=='CLARA_SETTINGS_READY')return;
- const doc=$('demo-frame').contentDocument, mount=doc?.getElementById('clara-team-mount');
- if(!mount)return;
- const team=teamPanel;
- if(!team)return;
- mount.appendChild(team);team.appendChild(team.querySelector('#clara-permission-editor')||$('clara-permission-editor'));team.classList.remove('hidden');team.style.cssText='display:block!important;margin:0;padding:0;border:0;box-shadow:none';
- const old=doc.getElementById('clara-equipe-embedded-style');if(!old){const style=doc.createElement('style');style.id='clara-equipe-embedded-style';style.textContent=`#clara-equipe-panel{color:#102447;font-family:Segoe UI,Aptos,Arial,sans-serif}#clara-equipe-panel form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;align-items:end}#clara-equipe-panel label{display:block;font-weight:600;font-size:13px}#clara-equipe-panel input:not([type=checkbox]),#clara-equipe-panel select{display:block;width:100%;padding:11px;border:1px solid #d8dce2;border-radius:9px;margin-top:7px;background:white}#clara-equipe-panel button{background:#102447;color:white;border:0;border-radius:8px;padding:10px 13px;cursor:pointer;width:auto}#clara-equipe-panel button:disabled{opacity:.4;cursor:not-allowed}#clara-equipe-panel table{width:100%;border-collapse:collapse;text-align:left;margin-top:16px}#clara-equipe-panel th,#clara-equipe-panel td{padding:10px;border-bottom:1px solid #e1e5eb;font-size:13px}#clara-equipe-panel .check-admin{display:flex;gap:8px;align-items:center}#clara-equipe-panel .team-msg{padding:10px 0;white-space:pre-wrap}`;doc.head.appendChild(style)}
- if(canManageTeam){team.querySelector('form').style.display='grid';team.querySelector('#clara-equipe-recarregar').style.display='inline-block';await loadTeam();}
- else{team.querySelector('form').style.display='none';team.querySelector('#clara-equipe-recarregar').style.display='none';teamMsg('Você não possui permissão para administrar usuários.');}
-});
-window.addEventListener('message',async event=>{
- if(event.origin!==location.origin||event.source!==$('demo-frame').contentWindow||event.data?.tipo!=='CLARA_INVITE_REQUEST')return;
- const send=(ok,erro)=>event.source.postMessage({tipo:'CLARA_INVITE_RESULT',ok,erro},location.origin);
- if(!canManageTeam)return send(false,'Sem permissão para convidar.');
- const {data:{user},error:authErr}=await client.auth.getUser();if(authErr||!user)return send(false,'Sessão expirada. Entre novamente.');
- const {data:owners,error:ownerErr}=await client.from('clara_membros').select('empresa_id').eq('usuario_id',user.id).eq('ativo',true);
- if(ownerErr||!canManageTeam)return send(false,'Sem autorização para convidar.');
- try{const {data,error}=await client.functions.invoke('clara-v9-equipe',{body:{...event.data.payload,empresa_id:activeEmpresa,acao:'convidar'}});if(error){let detail=data?.erro;try{detail=detail||(await error.context?.json())?.erro}catch{}throw new Error(detail||error.message)}if(!data?.sucesso)throw new Error(data?.erro||'Convite não confirmado.');send(true,'');}
- catch(e){send(false,e.message||'Falha na solicitação.');}
-});
-
-const CLARA_TABS=[['hoje','HOJE'],['processos','PROCESSOS'],['indicadores','INDICADORES'],['rotinas','ROTINAS'],['diario','DIÁRIO DE BORDO'],['crescimento','CRESCIMENTO'],['clara','MINHA CLARA'],['configuracoes','CONFIGURAÇÕES']];
-const CLARA_ACTIONS=[['ver','Visualizar'],['criar','Criar'],['editar','Editar'],['excluir','Excluir']];
-function normalizedPermissionEntry(v){if(v===true)return {ver:true,criar:true,editar:true,excluir:true};if(!v||typeof v!=='object')return {ver:false,criar:false,editar:false,excluir:false};return {ver:v.ver===true,criar:v.criar===true,editar:v.editar===true,excluir:v.excluir===true}}
-function teamEl(id){return document.getElementById(id)||$('demo-frame').contentDocument?.getElementById(id)||teamPanel?.querySelector('[id="'+id+'"]')}
-function makePermissionMatrix(mountId,existing){const mount=teamEl(mountId);if(!mount)return;mount.replaceChildren();const scroll=document.createElement('div');scroll.style.overflowX='auto';const table=document.createElement('table');table.className='clara-permission-table';const head=document.createElement('thead');const hr=document.createElement('tr');for(const label of ['Aba',...CLARA_ACTIONS.map(a=>a[1])]){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);const body=document.createElement('tbody');for(const [key,title] of CLARA_TABS){const row=document.createElement('tr');const label=document.createElement('td');label.textContent=title;row.append(label);const entry=normalizedPermissionEntry(existing?.[key]);for(const [action] of CLARA_ACTIONS){const td=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.dataset.tab=key;cb.dataset.action=action;cb.checked=entry[action];cb.setAttribute('aria-label',title+' — '+action);cb.onchange=()=>{const checks=[...row.querySelectorAll('input')];const view=checks.find(x=>x.dataset.action==='ver');if(action==='ver'&&!cb.checked)checks.forEach(x=>x.checked=false);if(action!=='ver'&&cb.checked)view.checked=true};td.append(cb);row.append(td)}body.append(row)}table.append(body);scroll.append(table);mount.append(scroll)}
-function readPermissionMatrix(mountId){const mount=teamEl(mountId);const p={};for(const [key] of CLARA_TABS)p[key]={ver:false,criar:false,editar:false,excluir:false};mount.querySelectorAll('input[data-tab][data-action]').forEach(c=>{p[c.dataset.tab][c.dataset.action]=c.checked});return p}
-let editingMember=null;
-function closePermissionEditor(){const modal=teamEl('clara-permission-editor');modal.hidden=true;modal.style.display='none';editingMember=null}
-function openPermissionEditor(m){editingMember=m;teamEl('clara-edit-identity').textContent=(m.nome||'')+' — '+(m.email||'');teamEl('clara-edit-perfil').value=m.perfil;teamEl('clara-edit-admin').checked=m.permissoes?.administrar_usuarios===true;teamEl('clara-edit-admin').disabled=!isOwner;makePermissionMatrix('clara-permissions-edit',m.permissoes);const modal=teamEl('clara-permission-editor');modal.hidden=false;modal.style.display='flex'}
-teamEl('clara-edit-cancel').onclick=closePermissionEditor;
-teamEl('clara-edit-save').onclick=async()=>{if(!editingMember)return;const b=teamEl('clara-edit-save');b.disabled=true;try{const role=teamEl('clara-edit-perfil').value;const p=readPermissionMatrix('clara-permissions-edit');p.administrar_usuarios=isOwner&&role==='gestor'&&teamEl('clara-edit-admin').checked;await teamAction({acao:'atualizar',usuario_id:editingMember.usuario_id,perfil:role,permissoes:p});closePermissionEditor();await loadTeam();teamMsg('Perfil e permissões por aba atualizados.')}catch(err){teamMsg(err.message)}finally{b.disabled=false}};
-makePermissionMatrix('clara-permissions-new',{});
-const teamPanel=$('clara-equipe-panel');
-// Administração da equipe: UI incorporada à aba Configurações.
-const teamMsg=t=>{const el=document.getElementById('clara-equipe-msg')||$('demo-frame').contentDocument?.getElementById('clara-equipe-msg');if(el)el.textContent=t};
-async function teamAction(body){
- const {data,error}=await client.functions.invoke('clara-v9-equipe',{body:{...body,empresa_id:activeEmpresa}});
- if(error||!data?.sucesso){
-  let detail=data?.erro||data?.mensagem;
-  if(!detail&&error?.context?.json){try{const response=await error.context.json();detail=response?.erro||response?.mensagem}catch{}}
-  throw new Error(detail||error?.message||'Operação não confirmada');
- }return data;
-}
-async function loadTeam(){if(!canManageTeam||!activeEmpresa)return;teamMsg('Carregando equipe...');try{
- const data=await teamAction({acao:'listar'});const tb=document.getElementById('clara-equipe-tbody')||$('demo-frame').contentDocument?.getElementById('clara-equipe-tbody');tb.replaceChildren();
- for(const m of data.membros||[]){const tr=document.createElement('tr');
- const cell=(txt)=>{const td=document.createElement('td');td.textContent=txt;tr.append(td);return td};
- cell((m.nome||'')+' — '+(m.email||'')).title=m.usuario_id;cell(m.perfil);cell(m.ativo?'Ativo':'Inativo');cell(m.permissoes?.administrar_usuarios?'Autorizado':'Não');
- const td=cell('');if(m.perfil!=='proprietario'&&m.usuario_id!==(await client.auth.getUser()).data.user?.id){const b=document.createElement('button');b.type='button';b.textContent=m.ativo?'Desativar':'Reativar';b.style.cssText='width:auto;margin:0;padding:7px 10px';
- if(m.removido||(!isOwner&&(m.perfil==='gestor'||m.permissoes?.administrar_usuarios)))b.disabled=true;
- b.onclick=async()=>{if(!confirm((m.ativo?'Desativar':'Reativar')+' este acesso?'))return;b.disabled=true;try{await teamAction({acao:'atualizar',usuario_id:m.usuario_id,ativo:!m.ativo});await loadTeam()}catch(e){teamMsg(e.message);b.disabled=false}};td.append(b);
- const edit=document.createElement('button');edit.type='button';edit.textContent='Editar';edit.style.cssText='width:auto;margin:0 0 0 8px;padding:7px 10px';if(!isOwner&&(m.perfil==='gestor'||m.permissoes?.administrar_usuarios))edit.disabled=true;
- edit.onclick=()=>openPermissionEditor(m);td.append(edit);
-  const reset=document.createElement('button');reset.type='button';reset.textContent='Redefinir senha';reset.style.cssText='width:auto;margin:0 0 0 8px;padding:7px 10px';reset.onclick=async()=>{if(!m.email)return teamMsg('Usuário sem e-mail válido.');if(!confirm('Enviar link de redefinição para '+m.email+'?'))return;reset.disabled=true;try{await teamAction({acao:'solicitar_reset',usuario_id:m.usuario_id});teamMsg('Solicitação de recuperação enviada. Confira a caixa de entrada do usuário.')}catch(e){teamMsg('Não foi possível solicitar a recuperação: '+e.message)}finally{reset.disabled=false}};td.append(reset);
- const del=document.createElement('button');del.type='button';del.textContent='Excluir';del.style.cssText='width:auto;margin:0 0 0 8px;padding:7px 10px;background:#a62828;color:#fff';
- if(!isOwner&&(m.perfil==='gestor'||m.permissoes?.administrar_usuarios))del.disabled=true;
- del.onclick=async()=>{const email=m.email||m.nome||m.usuario_id;const ok=confirm('Excluir o acesso de '+email+' desta empresa?\n\nO histórico operacional será preservado. A conta global não será excluída.');if(!ok)return;const typed=prompt('Para confirmar, digite EXCLUIR:');if(typed!=='EXCLUIR')return;del.disabled=true;try{await teamAction({acao:'excluir',usuario_id:m.usuario_id});await loadTeam();teamMsg('Vínculo removido da empresa com sucesso.')}catch(e){teamMsg(e.message);del.disabled=false}};td.append(del)}tb.append(tr)}
- const directory=(data.membros||[]).filter(m=>m.ativo&&!m.removido).map(m=>({id:m.usuario_id,name:m.nome||m.email,active:true}));if(window.CLARA_RUNTIME)window.CLARA_RUNTIME.directory=directory;$('demo-frame').contentWindow.postMessage({tipo:'CLARA_DIRECTORY',directory},location.origin);teamMsg('Equipe atualizada.');}catch(e){teamMsg('Não foi possível carregar a equipe: '+e.message)}
-}
-$('clara-equipe-recarregar').onclick=loadTeam;
-$('clara-equipe-form').onsubmit=async e=>{e.preventDefault();const b=$('clara-equipe-enviar');b.disabled=true;teamMsg('Enviando convite...');try{
- const perfil=$('clara-equipe-perfil').value;const permissions=readPermissionMatrix('clara-permissions-new');
- permissions.administrar_usuarios=isOwner&&perfil==='gestor'&&$('clara-equipe-admin').checked;
- const data=await teamAction({acao:'convidar',nome:$('clara-equipe-nome').value,email:$('clara-equipe-email').value,perfil,permissoes:permissions});
- teamMsg(data.mensagem+(data.readmissao_pendente?' A pessoa deverá entrar com o e-mail e senha existentes para confirmar. Nenhum novo convite por e-mail foi enviado.':''));$('clara-equipe-form').reset();await loadTeam();}catch(e){teamMsg('Falha ao carregar equipe: '+(e.message||'erro desconhecido')+'. Verifique a Edge Function e sua permissão.')}finally{b.disabled=false}};
-
-client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){show('login');window.CLARA_RUNTIME=null;}if(event==='TOKEN_REFRESHED'){setTimeout(()=>verifyActiveAccess(),0);}if(event==='PASSWORD_RECOVERY'){recovery=true;show('setpass');msg('Defina uma nova senha para continuar.')} });
-$('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-btn').disabled=true;msg('Verificando acesso...');const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('login-btn').disabled=false;if(error){msg('Não foi possível entrar: '+error.message,true);return}await refresh()});
-$('recover').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){msg('Digite seu e-mail acima antes de solicitar recuperação.',true);return}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});msg(error?'Não foi possível solicitar: '+error.message:'Se o e-mail estiver cadastrado, você receberá instruções de recuperação.',!!error)});
-$('pass-form').addEventListener('submit',async e=>{e.preventDefault();$('savepass').disabled=true;const {error}=await client.auth.updateUser({password:$('new-password').value});$('savepass').disabled=false;if(error){msg('Erro ao definir senha: '+error.message,true);return}recovery=false;history.replaceState({},'',location.pathname);msg('Senha salva. Acesso autenticado.');await refresh()});
-$('logout').addEventListener('click',async()=>{await client.auth.signOut();history.replaceState({},'',location.pathname);recovery=false;await refresh()});
-// Em links de convite, o Supabase cria uma sessão; exigir senha antes do uso.
-if(hash.get('type')==='invite'||url.searchParams.get('type')==='invite'){recovery=true}
-let checkingAccess=false;
-async function verifyActiveAccess(){
- if(checkingAccess||!window.CLARA_RUNTIME)return;checkingAccess=true;
- try{
-  const {data:{user},error:authError}=await client.auth.getUser();
-  const {data:live,error}=user?await client.from('clara_membros').select('empresa_id,perfil,ativo,permissoes').eq('usuario_id',user.id).eq('empresa_id',activeEmpresa).eq('ativo',true):{data:[],error:authError};
-  if(error||!live?.length){show('login');window.CLARA_RUNTIME=null;msg('Sua sessão ou autorização precisa ser validada novamente.',true);return;}
-  const old=window.CLARA_RUNTIME?.member;
-  if(old&&(old.perfil!==live[0].perfil||JSON.stringify(old.permissoes)!==JSON.stringify(live[0].permissoes)))await refresh();
- }finally{checkingAccess=false;}
-}
-window.addEventListener('focus',verifyActiveAccess);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)verifyActiveAccess();});
-setInterval(verifyActiveAccess,60000);
-await refresh();
-})();
-</script></body></html>
+</head>
+<body>
+  <div>
+    <div class="marca">Clara<span>.</span><small>GERENTE DE OPERAÇÕES</small></div>
+    <p>Levando você para a página de acesso…</p>
+    <a href="acesso.html">Entrar no painel</a>
+  </div>
+</body>
+</html>
