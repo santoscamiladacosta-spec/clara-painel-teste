@@ -985,6 +985,17 @@ function vClara() {
   <div class="panel" style="margin-top:16px"><h2>O que você enviou</h2><div class="stack">${enviados.slice(0,10).map(r => `<div class="item"><div class="flex"><h4>${esc(r.assunto)}</h4><span class="tag">${esc(nome(r.para_pessoa_id))}</span></div><p class="v3-muted">${esc(r.status)} · ${dtBR(r.criado_em)}${r.resposta ? ' · resposta: ' + esc(r.resposta) : ''}</p></div>`).join('') || vazio('Nada enviado ainda.')}</div></div>`;
 }
 
+const blocoSuporte = () => `<div class="panel" style="margin-top:16px">
+  <h2>Precisa de gente?</h2>
+  <p class="hint" style="margin:-10px 0 14px">A Clara resolve o dia a dia. Para o que exige decisão humana ou para quando algo quebra, o caminho é a sua consultoria.</p>
+  <div class="grid two">
+    <div class="item"><h4>Consultoria</h4><p>Mudança estrutural, oportunidade grande, decisão que você quer discutir com alguém de fora. Peça à Clara um dossiê com <b>+consultoria</b> e envie pela página.</p></div>
+    <div class="item"><h4>Suporte técnico</h4><p>Algo não funciona: o painel não abre, um e-mail não chegou, um acesso não entra. Qualquer pessoa pode abrir, inclusive quem usa só o painel.</p></div>
+  </div>
+  <div class="row-actions" style="margin-top:14px"><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://empreendacomia.online/suporte">Abrir a página de suporte</a></div>
+  <p class="hint" style="margin-top:12px">Dúvida de uso não precisa de chamado — pergunte à Clara ou consulte o manual.</p>
+</div>`;
+
 // ───────── CONFIGURAÇÕES ─────────
 function vConfig() {
   const a = D.acessos || {}; const c = ctx.contexto || {}; const L = a.licencas || {};
@@ -1042,7 +1053,8 @@ async function convidar() {
 }
 
 // ───────── estrutura ─────────
-const VIEWS = { hoje: vHoje, processos: vProcessos, indicadores: vIndicadores, rotinas: vRotinas, diario: vDiario, crescimento: vCrescimento, clara: vClara, config: vConfig };
+const vClaraComSuporte = () => vClara() + blocoSuporte();
+const VIEWS = { hoje: vHoje, processos: vProcessos, indicadores: vIndicadores, rotinas: vRotinas, diario: vDiario, crescimento: vCrescimento, clara: vClaraComSuporte, config: vConfig };
 function visivel([k,, , area]) {
   // Quem executa vive em três abas: o dia, como se faz e o próprio acesso.
   if (!aprova() && ['indicadores','rotinas','diario','crescimento'].includes(k)) return false;
