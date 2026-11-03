@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Clara | Painel de Gestão</title>
-<link rel="stylesheet" href="painel.css?v=13">
+<link rel="stylesheet" href="painel.css?v=14">
 </head>
 <body>
 <div class="app">
@@ -738,28 +738,103 @@ function salvarMedicao(id) {
 }
 
 // ───────── ROTINAS ─────────
-let semana = 0;
-function vRotinas() {
-  const base = new Date(); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + semana * 7);
-  const dias = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() + i); return { iso: new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,10), nome: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) }; });
-  const comp = col('compromissos'), tarefas = col('tarefas'), rot = col('rotinas');
-  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Rotinas', 'A cadência que mantém a operação de pé: o que se repete, quem conduz e o que isso gera.', pode('rotinas','criar') ? `<button class="btn" onclick="formCompromisso()">+ Compromisso</button><button class="btn light" onclick="formRotina()">+ Rotina recorrente</button><button class="btn light" onclick="formTarefa()">+ Tarefa</button>` : '') + `
-  <div class="panel"><div class="flex"><h2>Cadência</h2>${pode('rotinas','criar') ? `<button class="btn light sm" onclick="formRotina()">+ Nova rotina</button>` : ''}</div>
-    <p class="hint" style="margin:-10px 0 14px">Cada rotina vira tarefa quando chega a hora. Empresa sem cadência combina tudo no corredor e esquece metade.</p>
-    <div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || 'sem frequência')}</span></div>
-      <p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || 'Sem responsável')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p>
-      ${pode('rotinas','criar') ? `<div class="row-actions"><button class="btn sm" onclick="gerarTarefaRotina('${esc(r.id)}')">Gerar a tarefa de hoje</button></div>` : ''}</div>`).join('') || vazio('Nenhuma rotina definida. Comece pelo que já acontece toda semana: conferência, fechamento, reunião.')}</div></div>
+// A tela abre pela agenda (o que acontece e quando). A cadência fica recolhida embaixo: é cadastro, não leitura diária.
+let semana = 0, agVisao = 'semana', agData = '';
+const isoLocal = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const dataLocal = iso => new Date(iso + 'T12:00:00');
+const DIAS_SEM = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const semAcento = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-  <details class="clara-details" style="margin-top:16px"><summary>Ver a semana em agenda</summary><div class="clara-details-body">
-  <div class="panel" style="margin:0"><div class="flex" style="margin-bottom:12px"><div class="flexwrap"><button class="btn light sm" onclick="semana--;render()">←</button><button class="btn light sm" onclick="semana=0;render()">Hoje</button><button class="btn light sm" onclick="semana++;render()">→</button><b>${dBR(dias[0].iso)} — ${dBR(dias[6].iso)}</b></div></div>
-  <div class="v3-calendar">${dias.map(d => `<div class="v3-day"><b style="font-size:12px">${esc(d.nome)}</b>
-    ${comp.filter(c => c.data === d.iso).sort((a,b) => String(a.hora||'').localeCompare(String(b.hora||''))).map(c => `<div class="v3-event ${concluida(c.status) ? 'done' : ''} click" onclick="acaoCompromisso('${esc(c.id)}')">${c.hora ? `<b>${esc(c.hora)}</b> ` : ''}${esc(c.titulo)}<br><span class="v3-muted">${esc(nome(c.responsavel_pessoa_id))}</span></div>`).join('')}
-    ${tarefas.filter(t => t.prazo === d.iso).map(t => `<div class="v3-event ${concluida(t.status) ? 'done' : ''}" style="border-left-color:#d78a32">Prazo: ${esc(t.titulo)}<br><span class="v3-muted">${esc(nome(t.responsavel_pessoa_id))}</span></div>`).join('')}</div>`).join('')}</div></div>
-  </div></details>
-  <div class="grid two" style="margin-top:16px">
-    <div class="panel" style="display:none"><div class="stack">${rot.map(r => `<div class="item"><div class="flex"><h4>${esc(r.nome || r.titulo)}</h4><span class="tag blue">${esc(r.frequencia || '')}</span></div><p>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || '')}${r.dias ? ' · ' + esc(r.dias) : ''}${r.hora ? ' · ' + esc(r.hora) : ''}</p></div>`).join('') || vazio('Nenhuma rotina recorrente registrada.')}</div></div>
-    <div class="panel"><h2>Tarefas</h2><div class="stack">${tarefas.sort((a,b) => (concluida(a.status) - concluida(b.status)) || String(a.prazo||'9999').localeCompare(String(b.prazo||'9999'))).map(cardTarefa).join('') || vazio('Nenhuma tarefa.')}</div></div>
+// Quando uma rotina recorrente cai num dia. Lê a frequência como a equipe escreve ("diária", "semanal · sexta", "mensal · último dia útil").
+function rotinaNoDia(r, iso) {
+  const f = semAcento((r.frequencia || '') + ' ' + (r.dias || '')), d = dataLocal(iso), dow = d.getDay();
+  const util = dow > 0 && dow < 6;
+  const citados = DIAS_SEM.map((n, i) => f.includes(semAcento(n)) ? i : -1).filter(i => i >= 0);
+  if (citados.length) return citados.includes(dow);
+  if (/diari/.test(f)) return util;
+  if (/mensal/.test(f) && /ultimo dia util/.test(f)) {
+    const u = new Date(d.getFullYear(), d.getMonth() + 1, 0, 12);
+    while (u.getDay() === 0 || u.getDay() === 6) u.setDate(u.getDate() - 1);
+    return isoLocal(u) === iso;
+  }
+  return false;
+}
+function eventosDoDia(iso) {
+  const ev = [];
+  for (const c of col('compromissos').filter(c => c.data === iso)) ev.push({ tipo: 'comp', hora: c.hora || c.horario || '', titulo: c.titulo, quem: nome(c.responsavel_pessoa_id), feito: concluida(c.status), id: c.id });
+  for (const t of col('tarefas').filter(t => t.prazo === iso)) ev.push({ tipo: 'prazo', hora: '', titulo: t.titulo || t.nome, quem: nome(t.responsavel_pessoa_id), feito: concluida(t.status) });
+  for (const r of col('rotinas').filter(r => rotinaNoDia(r, iso))) ev.push({ tipo: 'rot', hora: r.hora || r.horario || '', titulo: r.nome || r.titulo, quem: nome(r.responsavel_pessoa_id) });
+  return ev.sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+}
+const ROT_EV = { comp: 'Compromisso', prazo: 'Prazo', rot: 'Rotina' };
+function evHTML(e, curto, semHora) {
+  const click = e.tipo === 'comp' ? ` click" onclick="acaoCompromisso('${esc(e.id)}')"` : '"';
+  return `<div class="ag-ev ag-${e.tipo}${e.feito ? ' done' : ''}${click}>${e.hora && !semHora ? `<b>${esc(e.hora)}</b> ` : ''}${e.tipo === 'prazo' ? 'Prazo: ' : ''}${esc(e.titulo)}${!curto && e.quem ? `<small>${esc(e.quem)}</small>` : ''}</div>`;
+}
+function agMover(passo) {
+  const d = dataLocal(agData || hojeISO());
+  if (agVisao === 'dia') d.setDate(d.getDate() + passo);
+  else if (agVisao === 'semana') d.setDate(d.getDate() + 7 * passo);
+  else { d.setDate(1); d.setMonth(d.getMonth() + passo); }
+  agData = isoLocal(d); render();
+}
+function agAbrirDia(iso) { agData = iso; agVisao = 'dia'; render(); }
+
+function vAgenda() {
+  const hoje = hojeISO(), ref = agData || hoje, d0 = dataLocal(ref);
+  let titulo = '', corpo = '';
+  if (agVisao === 'dia') {
+    const ev = eventosDoDia(ref);
+    titulo = d0.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    corpo = ev.length ? `<div class="ag-diaLista">${ev.map(e => `<div class="ag-linha"><span class="ag-hora">${esc(e.hora || '—')}</span><span class="ag-tipo ag-${e.tipo}">${ROT_EV[e.tipo]}</span>${evHTML(e, false, true)}</div>`).join('')}</div>`
+      : vazio('Nada marcado para este dia.');
+  } else if (agVisao === 'semana') {
+    const ini = new Date(d0); ini.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
+    const dias = [...Array(7)].map((_, i) => { const d = new Date(ini); d.setDate(ini.getDate() + i); return isoLocal(d); });
+    titulo = `${dBR(dias[0])} — ${dBR(dias[6])}`;
+    corpo = `<div class="ag-semana">${dias.map(iso => `<div class="ag-dia${iso === hoje ? ' hoje' : ''}"><button class="ag-dtit" onclick="agAbrirDia('${iso}')">${esc(dataLocal(iso).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }))}</button>${eventosDoDia(iso).map(e => evHTML(e)).join('') || '<p class="ag-livre">Livre</p>'}</div>`).join('')}</div>`;
+  } else {
+    const prim = new Date(d0.getFullYear(), d0.getMonth(), 1, 12), ini = new Date(prim); ini.setDate(prim.getDate() - ((prim.getDay() + 6) % 7));
+    titulo = d0.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const cel = [...Array(42)].map((_, i) => { const d = new Date(ini); d.setDate(ini.getDate() + i); return d; });
+    corpo = `<div class="ag-mes">${['seg','ter','qua','qui','sex','sáb','dom'].map(n => `<div class="ag-mcab">${n}</div>`).join('')}${cel.map(d => {
+      const iso = isoLocal(d), ev = eventosDoDia(iso), foraMes = d.getMonth() !== d0.getMonth();
+      const destaque = ev.filter(e => e.tipo !== 'rot');
+      return `<div class="ag-mdia${foraMes ? ' fora' : ''}${iso === hoje ? ' hoje' : ''}" onclick="agAbrirDia('${iso}')"><b>${d.getDate()}</b>${destaque.slice(0, 2).map(e => evHTML(e, true)).join('')}${destaque.length > 2 ? `<small class="ag-mais">+${destaque.length - 2}</small>` : ''}${ev.length - destaque.length ? `<small class="ag-rotcont">${ev.length - destaque.length} rotina${ev.length - destaque.length > 1 ? 's' : ''}</small>` : ''}</div>`;
+    }).join('')}</div>`;
+  }
+  return `<div class="panel ag-painel">
+    <div class="ag-barra">
+      <div class="pillnav" style="margin:0">${[['dia','Dia'],['semana','Semana'],['mes','Mês']].map(([k, n]) => `<button class="${agVisao === k ? 'active' : ''}" onclick="agVisao='${k}';render()">${n}</button>`).join('')}</div>
+      <div class="ag-nav"><button class="btn light sm" onclick="agMover(-1)" aria-label="Anterior">←</button><button class="btn light sm" onclick="agData='';render()">Hoje</button><button class="btn light sm" onclick="agMover(1)" aria-label="Próximo">→</button>
+        <input type="date" class="ag-data" value="${esc(ref)}" onchange="if(this.value){agData=this.value;render()}" aria-label="Ir para a data"></div>
+    </div>
+    <h2 class="ag-titulo">${esc(titulo.charAt(0).toUpperCase() + titulo.slice(1))}</h2>
+    ${corpo}
+    <div class="ag-legenda"><span class="ag-comp">Compromisso</span><span class="ag-prazo">Prazo de tarefa</span><span class="ag-rot">Rotina recorrente</span></div>
   </div>`;
+}
+
+function vRotinas() {
+  const tarefas = col('tarefas'), rot = col('rotinas');
+  const abertas = tarefas.filter(t => !concluida(t.status)).sort((a, b) => String(a.prazo || '9999').localeCompare(String(b.prazo || '9999')));
+  const feitas = tarefas.filter(t => concluida(t.status));
+  return cab(`CLARA / ${esc(ctx.empresa.nome.toUpperCase())}`, 'Rotinas', 'O que acontece e quando: compromissos, prazos e a cadência que mantém a operação de pé.', pode('rotinas','criar') ? `<button class="btn" onclick="formCompromisso()">+ Compromisso</button><button class="btn light" onclick="formTarefa()">+ Tarefa</button><button class="btn light" onclick="formRotina()">+ Rotina recorrente</button>` : '') + `
+  ${vAgenda()}
+
+  <div class="panel" style="margin-top:16px"><div class="flex"><h2>Tarefas em aberto <span class="v3-muted" style="font-weight:500">${abertas.length}</span></h2></div>
+    <div class="ag-tarefas">${abertas.map(cardTarefa).join('') || vazio('Nenhuma tarefa em aberto.')}</div>
+    ${feitas.length ? `<details class="dj-movs" data-k="rot-feitas"><summary>Concluídas (${feitas.length}) <span class="ch-chev" aria-hidden="true"></span></summary><div class="ag-tarefas" style="margin-top:10px">${feitas.map(cardTarefa).join('')}</div></details>` : ''}
+  </div>
+
+  <details class="clara-details ag-cadencia" data-k="rot-cadencia">
+    <summary><span><b>Cadência</b> · ${rot.length} ${rot.length === 1 ? 'rotina recorrente' : 'rotinas recorrentes'}</span><span class="v3-muted">O que se repete e quem conduz. Já aparece na agenda acima.</span></summary>
+    <div class="clara-details-body">
+      ${rot.length ? `<div class="ag-rotlista">${rot.map(r => `<div class="ag-rot-linha"><div><b>${esc(r.nome || r.titulo)}</b><small>${esc(nome(r.responsavel_pessoa_id) || r.responsavel || 'Sem responsável')}${(r.hora || r.horario) ? ' · ' + esc(r.hora || r.horario) : ''}</small></div><span class="tag blue">${esc(r.frequencia || 'sem frequência')}</span>${pode('rotinas','criar') ? `<button class="btn light sm" onclick="gerarTarefaRotina('${esc(r.id)}')">Gerar a tarefa de hoje</button>` : ''}</div>`).join('')}</div>`
+        : vazio('Nenhuma rotina definida. Comece pelo que já acontece toda semana: conferência, fechamento, reunião.')}
+      ${pode('rotinas','criar') ? `<div class="row-actions" style="margin-top:12px"><button class="btn light sm" onclick="formRotina()">+ Nova rotina</button></div>` : ''}
+    </div>
+  </details>`;
 }
 function gerarTarefaRotina(id) {
   const r = col('rotinas').find(x => x.id === id); if (!r) return;
