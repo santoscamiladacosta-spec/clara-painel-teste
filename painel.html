@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Clara | Painel de Gestão</title>
-<link rel="stylesheet" href="painel.css?v=12">
+<link rel="stylesheet" href="painel.css?v=13">
 </head>
 <body>
 <div class="app">
@@ -811,20 +811,20 @@ function itemDiario(e) {
 function caixaDia(dia, itens, aberta) {
   const destaques = itens.filter(e => !movimentacao(e)), movs = itens.filter(movimentacao);
   const tops = [...new Set(itens.flatMap(e => e.topicos || []))];
-  return `<details class="dj-caixa" ${aberta ? 'open' : ''}>
+  return `<details class="dj-caixa" data-k="dia-${esc(dia)}" ${aberta ? 'open' : ''}>
     <summary><span class="dj-dia">${esc(rotuloDia(dia))}</span>
       <span class="dj-cont">${itens.length} ${itens.length === 1 ? 'registro' : 'registros'}</span>
       <span class="dj-tops">${tops.slice(0, 3).map(x => `<span class="tag ${TOP_COR[x] || 'gray'}">${esc(x)}</span>`).join('')}</span>
       <span class="ch-chev" aria-hidden="true"></span></summary>
     <div class="dj-corpo">
       ${destaques.map(itemDiario).join('') || '<p class="dj-vazio">Só movimentações de registro neste dia.</p>'}
-      ${movs.length ? `<details class="dj-movs"><summary>Movimentações de registro (${movs.length}) <span class="ch-chev" aria-hidden="true"></span></summary><div>${movs.map(itemDiario).join('')}</div></details>` : ''}
+      ${movs.length ? `<details class="dj-movs" data-k="movs-${esc(dia)}"><summary>Movimentações de registro (${movs.length}) <span class="ch-chev" aria-hidden="true"></span></summary><div>${movs.map(itemDiario).join('')}</div></details>` : ''}
     </div>
   </details>`;
 }
 
 function caixaTopico(topico, itens) {
-  return `<details class="dj-caixa">
+  return `<details class="dj-caixa" data-k="top-${esc(topico)}">
     <summary><span class="dj-dia">${esc(topico)}</span>
       <span class="dj-cont">${itens.length} ${itens.length === 1 ? 'registro' : 'registros'}</span>
       <span class="dj-tops"><span class="tag ${TOP_COR[topico] || 'gray'}">${esc(dBR(diaDe(itens[0])))}</span></span>
@@ -834,7 +834,7 @@ function caixaTopico(topico, itens) {
 }
 
 const TOP_GLIFO = { 'Decisões': '◆', 'Avanços e conquistas': '★', 'Problemas e obstáculos': '▲', 'Mudanças operacionais': '⇄', 'Aprendizados': '✎', 'Planejamento': '◷' };
-let periodoDiario = 7;
+let periodoDiario = 7, topicoResumo = '';
 
 function destaque(e) {
   const top = (e.topicos || [])[0] || 'Mudanças operacionais';
@@ -852,8 +852,12 @@ function vDiario() {
   const corte = periodoDiario ? new Date(Date.now() - periodoDiario * 864e5).toISOString() : '';
   const noPeriodo = D.diario.filter(e => !corte || (e.registrado_em || '') >= corte);
   const contar = top => noPeriodo.filter(e => (e.topicos || []).includes(top)).length;
-  const destaques = noPeriodo.filter(e => !movimentacao(e)).slice(0, 6);
-  const movs = noPeriodo.filter(movimentacao).length;
+  if (topicoResumo && !contar(topicoResumo)) topicoResumo = '';
+  // Com um tema escolhido nos cartões, mostra tudo daquele tema no período; sem tema, os 6 mais recentes.
+  const doTema = topicoResumo ? noPeriodo.filter(e => (e.topicos || []).includes(topicoResumo)) : noPeriodo;
+  const destaques = doTema.filter(e => !movimentacao(e)).slice(0, topicoResumo ? 50 : 6);
+  const listaMovs = doTema.filter(movimentacao);
+  const movs = listaMovs.length;
   const rotuloPeriodo = periodoDiario === 7 ? 'nos últimos 7 dias' : periodoDiario === 30 ? 'nos últimos 30 dias' : 'desde o começo';
 
   const lista = D.diario.filter(e => !filtroDiario || (e.topicos || []).includes(filtroDiario));
@@ -871,15 +875,19 @@ function vDiario() {
       <div class="pillnav" style="margin:0">${[[7,'7 dias'],[30,'30 dias'],[0,'Tudo']].map(([v,n]) => `<button class="${periodoDiario === v ? 'active' : ''}" onclick="periodoDiario=${v};render()">${n}</button>`).join('')}</div>
     </div>
 
-    <div class="dq-res">${TOPICOS.map(x => ({ x, n: contar(x) })).filter(a => a.n).map(({ x, n }) => `<div class="dq-chip ${esc(TOP_COR[x] || 'gray')}"><span class="dq-gl">${TOP_GLIFO[x] || '•'}</span><b>${n}</b><small>${esc(x)}</small></div>`).join('') || `<p class="hint" style="margin:0">Nada registrado ${esc(rotuloPeriodo)}.</p>`}</div>
+    <div class="dq-res">${TOPICOS.map(x => ({ x, n: contar(x) })).filter(a => a.n).map(({ x, n }) => `<button type="button" class="dq-chip ${esc(TOP_COR[x] || 'gray')}${topicoResumo === x ? ' sel' : ''}" aria-pressed="${topicoResumo === x}" title="${topicoResumo === x ? 'Mostrar todos os temas' : 'Ver só ' + esc(x)}" onclick="topicoResumo=topicoResumo==='${x}'?'':'${x}';render()"><span class="dq-gl">${TOP_GLIFO[x] || '•'}</span><b>${n}</b><small>${esc(x)}</small></button>`).join('') || `<p class="hint" style="margin:0">Nada registrado ${esc(rotuloPeriodo)}.</p>`}</div>
+    ${topicoResumo ? `<p class="dq-filtro">Mostrando só <b>${esc(topicoResumo)}</b> ${esc(rotuloPeriodo)}. <button type="button" class="linkbtn" onclick="topicoResumo='';render()">Ver todos os temas</button></p>` : ''}
 
     ${destaques.length ? `<div class="dq-lista">${destaques.map(destaque).join('')}</div>`
+      : topicoResumo ? (movs ? '' : `<div class="dq-calma"><p>Nada neste tema ${esc(rotuloPeriodo)}.</p></div>`)
       : `<div class="dq-calma"><b>Semana tranquila.</b><p>Nenhuma decisão, problema ou mudança registrada ${esc(rotuloPeriodo)}. Se aconteceu algo que vale guardar, registre — ou peça à Clara para registrar por você na conversa.</p></div>`}
 
-    ${movs ? `<p class="dq-nota">Além disso, ${movs} ${movs === 1 ? 'alteração de registro' : 'alterações de registro'} no painel ${esc(rotuloPeriodo)}. Estão no histórico abaixo.</p>` : ''}
+    ${movs ? (topicoResumo
+      ? `<details class="dj-movs dq-movs" data-k="resumo-movs" ${destaques.length ? '' : 'open'}><summary>${destaques.length ? 'E mais ' : ''}${movs} ${movs === 1 ? 'alteração de registro' : 'alterações de registro'} no painel ${esc(rotuloPeriodo)} <span class="ch-chev" aria-hidden="true"></span></summary><div>${listaMovs.map(itemDiario).join('')}</div></details>`
+      : `<p class="dq-nota">Além disso, ${movs} ${movs === 1 ? 'alteração de registro' : 'alterações de registro'} no painel ${esc(rotuloPeriodo)}. Estão no histórico abaixo.</p>`) : ''}
   </div>
 
-  <details class="dj-historico">
+  <details class="dj-historico" data-k="historico">
     <summary><b>Histórico completo</b><span>${D.diario.length} ${D.diario.length === 1 ? 'registro' : 'registros'} desde a instalação</span><span class="ch-chev" aria-hidden="true"></span></summary>
     <div class="dj-hist-corpo">
       <div class="flex" style="align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
@@ -1062,10 +1070,14 @@ function visivel([k,, , area]) {
   if (area === '__gestao') return gestao(); if (area === null) return true; return pode(area);
 }
 function irPara(k) { aba = k; try { localStorage.setItem('clara-aba', k); } catch {} render(); window.scrollTo(0,0); }
+// Caixas recolhíveis com data-k lembram se estavam abertas: um clique num filtro redesenha a tela, e a caixa não pode fechar sozinha.
+const caixasAbertas = {};
 function render() {
+  document.querySelectorAll('#body details[data-k]').forEach(d => { caixasAbertas[d.dataset.k] = d.open; });
   const abas = ABAS.filter(visivel); if (!abas.some(a => a[0] === aba)) aba = abas[0][0];
   $('nav').innerHTML = abas.map(([k, ic, n]) => `<button class="${k === aba ? 'active' : ''}" onclick="irPara('${k}')">${ic}&nbsp;&nbsp; ${k === 'processos' && !aprova() ? 'COMO SE FAZ' : n}</button>`).join('');
   $('body').innerHTML = VIEWS[aba]();
+  document.querySelectorAll('#body details[data-k]').forEach(d => { if (d.dataset.k in caixasAbertas) d.open = caixasAbertas[d.dataset.k]; });
 }
 async function iniciar(empresaId) {
   const { data, error } = await sb.rpc('clara_contexto', empresaId ? { p_empresa: empresaId } : {});
