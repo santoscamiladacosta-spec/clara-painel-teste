@@ -1,4 +1,5 @@
 // GERADO por cards/gerar.mjs — não editar à mão.
+// (1.5.0: card 'mostrar' ajustado à mão; o gerador não está neste repositório.)
 const HTML = String.raw`<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -137,7 +138,7 @@ function render(res){
   var d = res.structuredContent;
   if (!d && res.content && res.content[0] && res.content[0].text){ try { d = JSON.parse(res.content[0].text); } catch(e){} }
   if (res.isError || !d){ app.innerHTML = '<div class="note">A Clara explica na conversa o que aconteceu.</div>'; return tamanho(); }
-  try { (VIEWS[CARD] || VIEWS.contexto)(d); } catch(e){ app.innerHTML = '<div class="note">Não consegui montar este card. A Clara segue pela conversa.</div>'; }
+  try { var qual = CARD === 'mostrar' ? ((d.eu || d.sem_licenca_clara) ? 'contexto' : 'painel') : CARD; (VIEWS[qual] || VIEWS.contexto)(d); } catch(e){ app.innerHTML = '<div class="note">Não consegui montar este card. A Clara segue pela conversa.</div>'; }
   ligarPedidos(); tamanho();
 }
 var cab = function(t, s){ return '<div class="head"><div class="av">C</div><div><h1>' + t + '</h1><p>' + s + '</p></div></div>'; };
@@ -283,7 +284,7 @@ var VIEWS = {
 </body>
 </html>
 `;
-export const CARDS = ['contexto', 'painel', 'dependencia', 'propor'];
+export const CARDS = ['contexto', 'painel', 'dependencia', 'propor', 'mostrar'];
 export const MIME_APP = 'text/html;profile=mcp-app';
 export const uriCard = (nome) => `ui://clara/${nome}.html`;
 export const htmlCard = (nome) => HTML.replace('<script>', `<script>window.__CLARA_CARD__=${JSON.stringify(nome)};</script>\n<script>`);
