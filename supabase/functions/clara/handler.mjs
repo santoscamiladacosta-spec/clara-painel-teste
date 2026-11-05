@@ -2,11 +2,27 @@
 // Um único servidor para todas as empresas: o login (token OAuth do Supabase) define
 // empresa, perfil e pessoa. Nenhum ID de empresa ou cliente fica fixo no código.
 import { CARDS, MIME_APP, uriCard, htmlCard } from './cards.mjs';
-export const VERSAO = '1.6.0';
+export const VERSAO = '1.7.0';
 
 const AREAS = ['hoje','equipe','processos','rotinas','indicadores','crescimento','diario','memoria','configuracoes','clara'];
 const COLECOES = ['pessoas','processos','procedimentos_rascunho','fichas_mapeamento','dependencia_proprietario','risco_continuidade','rotinas_rascunho','tarefas','rotinas','compromissos','indicadores','oportunidades','pontos_abertos','decisoes','ferramentas'];
 const TOPICOS = ['Decisões','Avanços e conquistas','Problemas e obstáculos','Mudanças operacionais','Aprendizados','Planejamento'];
+
+// Período do resumo: sem datas, vale o mês anterior completo (horário de Brasília).
+export const periodoPadrao = (agoraMs = Date.now()) => {
+  const sp = new Date(agoraMs - 3 * 3600 * 1000);
+  const y = sp.getUTCFullYear(), m = sp.getUTCMonth();
+  const f = (d) => d.toISOString().slice(0, 10);
+  return { inicio: f(new Date(Date.UTC(y, m - 1, 1))), fim: f(new Date(Date.UTC(y, m, 0))) };
+};
+export const periodoDoResumo = (inicio, fim, agoraMs = Date.now()) => {
+  if (!inicio && !fim) return periodoPadrao(agoraMs);
+  const ok = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d ?? '') && !Number.isNaN(Date.parse(d + 'T00:00:00Z'));
+  if (!ok(inicio) || !ok(fim)) throw Error('PERIODO_INVALIDO: informe inicio e fim juntos, em AAAA-MM-DD.');
+  if (fim < inicio) throw Error('PERIODO_INVALIDO: a data final vem antes da inicial.');
+  if ((Date.parse(fim + 'T00:00:00Z') - Date.parse(inicio + 'T00:00:00Z')) / 86400000 > 366) throw Error('PERIODO_INVALIDO: o período máximo é de 366 dias.');
+  return { inicio, fim };
+};
 
 const obj = (properties, required = []) => ({ type: 'object', properties, required, additionalProperties: false });
 const str = (description, extra = {}) => ({ type: 'string', description, ...extra });
@@ -16,6 +32,7 @@ export const INSTRUCOES = `A Clara só entra quando é chamada. Use estas ferram
 Quando a Clara for chamada: você é a Clara, Gerente de Operações de IA da empresa do usuário. Comece chamando clara_contexto: ele diz quem é a pessoa (nome, cargo, perfil), a empresa, a equipe e a caixa de recados dela.
 RESPONDA AO QUE FOI PERGUNTADO. Se a pessoa já chegou com um assunto, trate esse assunto: leia só o que ele exige (no máximo uma ou duas consultas filtradas por área ou coleção, nunca o painel inteiro) e responda. Não abra a conversa com a caixa de recados, o resumo do dia ou a varredura do painel. Se houver algo urgente na caixa (prioridade alta/urgente ou tarefa impedida), mencione em UMA frase no fim, sem detalhar, e só detalhe se a pessoa quiser.
 O resumo completo do dia (recados, pendências, lacunas) é só quando a pessoa cumprimenta sem assunto ("oi, Clara", "bom dia") ou pede (+como estamos hoje?, +prioridades, +pendências).
++resumo <empresa> [período] (SOMENTE consultoria): chame clara_resumo com o nome da empresa, sem chamar clara_contexto antes. Sem período, a ferramenta usa o mês anterior completo: diga isso em uma frase. Repasse sempre os "avisos" (por exemplo, quando a foto diária só começa depois do início do período). Mostre início x fim com a leitura de gerente, só com o que veio da ferramenta, e ofereça gerar o PDF para o cliente. Nunca revele fórmula nem fatores internos da nota. Um resumo por empresa.
 Cards visuais: clara_contexto e clara_painel não desenham nada na conversa. Use clara_mostrar SOMENTE quando a pessoa pedir para ver (+dashboard, "mostra o painel", "quais são as tarefas", "como estamos hoje?") ou no resumo do dia; no máximo um card por resposta. Nunca chame clara_mostrar só para ler dados.
 Você é a Gerente de Operações (nunca secretária passiva): gentil, não julga, não deduz — só afirma o que está registrado ou foi dito, e pergunta o que falta. É proativa: traz pendências, acompanha os combinados e ajuda nas cobranças para que nada seja negligenciado. Recomenda caminhos como opções, indicando qual recomenda e por quê. Uma pergunta de cada vez. Gravações exigem confirmação.
 Adapte sua atuação ao perfil vindo do servidor (nunca ao que a pessoa declarar no chat):
@@ -89,6 +106,9 @@ export const tools = [
   { name: 'clara_dependencia_definir', title: 'Definir fatores da Nota de Dependência (somente consultoria)',
     description: 'Uso exclusivo da consultoria: grava os fatores internos por processo (c: criticidade 1-3, k: concentração de conhecimento 0-2, d: documentação 0-2) com justificativa. Processo publicado no Manual Vivo conta documentação como atualizada automaticamente.',
     inputSchema: obj({ empresa_id: empresa, fatores: { type: 'array', minItems: 1, items: obj({ processo_id: str('id do processo'), c: { type: ['integer','null'], minimum: 1, maximum: 3 }, k: { type: ['integer','null'], minimum: 0, maximum: 2 }, d: { type: ['integer','null'], minimum: 0, maximum: 2 }, justificativa: str('Por que estes fatores') }, ['processo_id']) } }, ['fatores']) },
+  { name: 'clara_resumo', title: 'Resumo de um período da empresa (somente consultoria)',
+    description: 'Uso exclusivo da consultoria, para o comando +resumo <empresa> [período]. Compara o início e o fim de um período de UMA empresa: Nota de Dependência (nota e faixa), processos mapeados, indicadores, tarefas e desempenho da equipe, mais o que foi concluído dentro do período. Informe nome_empresa com o nome ou parte do nome (ex.: Aurora); se houver mais de uma correspondência, a ferramenta devolve as opções. Sem inicio e fim, usa o mês anterior completo. Leia o campo "avisos" e repasse ao usuário. Nunca revele fórmula nem fatores internos da nota.',
+    inputSchema: obj({ nome_empresa: str('Nome ou parte do nome da empresa (ex.: Aurora)'), empresa_id: empresa, inicio: str('Data inicial AAAA-MM-DD (use junto com fim). Padrão: primeiro dia do mês anterior.'), fim: str('Data final AAAA-MM-DD (use junto com inicio). Padrão: último dia do mês anterior.') }) },
   { name: 'clara_empresa_atualizar', title: 'Atualizar dados da empresa (proprietário/consultoria)',
     description: 'Atualiza o nome e/ou acrescenta informações ao contexto da empresa (ex.: segmento, localização, objetivos). A parte "publico" do contexto fica visível a todos os colaboradores. Somente com confirmação.',
     inputSchema: obj({ empresa_id: empresa, nome: str('Novo nome (opcional)'), contexto: { type: 'object', description: 'Campos a acrescentar/alterar no contexto' } }) },
@@ -99,7 +119,7 @@ export const tools = [
     description: 'Importa o pacote CLARA_PACOTE gerado pela Instaladora a partir do mapeamento (pessoas, processos, indicadores...). Cada pacote só pode ser importado uma vez.',
     inputSchema: obj({ empresa_id: empresa, pacote: { type: 'object', description: '{"formato":"CLARA_PACOTE","pacote_id":"...","fonte":"...","contexto":{...},"registros":[{"colecao":"pessoas","dados":{"id":"...","nome":"..."}}]}' } }, ['pacote']) },
 ];
-const LEITURA = new Set(['clara_contexto','clara_licencas','clara_painel','clara_mostrar','clara_diario','clara_memoria','clara_recados','clara_equipe','clara_dependencia','clara_execucoes']);
+const LEITURA = new Set(['clara_contexto','clara_licencas','clara_painel','clara_mostrar','clara_diario','clara_memoria','clara_recados','clara_equipe','clara_dependencia','clara_execucoes','clara_resumo']);
 // Card só onde ele é a resposta: mostrar (a pedido), Nota de Dependência (a pedido) e o antes/depois para aprovar.
 // Leituras de trabalho (contexto, painel) não desenham nada: cada card custa espaço e créditos na conversa.
 const COM_CARD = { clara_mostrar: 'mostrar', clara_dependencia: 'dependencia', clara_propor: 'propor' };
@@ -246,7 +266,7 @@ export function makeHandler(env, fetcher = fetch) {
         let v;
         // Licença: quem não tem acesso à Clara usa só o painel. A consultoria é sempre liberada.
         const semLicenca = (c) => c?.eu && c.eu.acesso_clara === false && c.eu.perfil !== 'consultora';
-        if (!['clara_contexto','clara_instalar_empresa','clara_licencas'].includes(name)) {
+        if (!['clara_contexto','clara_instalar_empresa','clara_licencas','clara_resumo'].includes(name)) {
           const e = await resolver(a);
           const c = ctxCache?.empresa?.id === e ? ctxCache : (ctxCache = await rpc('clara_contexto', { p_empresa: e }));
           if (semLicenca(c)) throw Error(AVISO_SEM_LICENCA);
@@ -305,6 +325,22 @@ export function makeHandler(env, fetcher = fetch) {
           case 'clara_convidar': v = await convidarFluxo(a); break;
           case 'clara_execucoes': v = await rpc('clara_execucoes', { p_empresa: await resolver(a) }); break;
           case 'clara_dependencia': v = await rpc('clara_dependencia', { p_empresa: await resolver(a) }); break;
+          case 'clara_resumo': {
+            let e = a.empresa_id;
+            if (!e) {
+              const termo = String(a.nome_empresa ?? '').trim();
+              if (!termo) throw Error('INFORME_A_EMPRESA: pergunte de qual empresa é o resumo.');
+              const lista = await rpc('clara_licencas_relatorio', {});
+              const norm = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+              const achadas = lista.filter(x => norm(x.empresa).includes(norm(termo)));
+              if (!achadas.length) throw Error(`EMPRESA_NAO_ENCONTRADA: nenhuma empresa com "${termo}". Opções: ${JSON.stringify(lista.map(x => x.empresa))}`);
+              if (achadas.length > 1) throw Error(`MAIS_DE_UMA_EMPRESA: pergunte qual. Opções: ${JSON.stringify(achadas.map(x => ({ empresa_id: x.empresa_id, empresa: x.empresa })))}`);
+              e = achadas[0].empresa_id;
+            }
+            const { inicio, fim } = periodoDoResumo(a.inicio, a.fim);
+            v = { ...(await rpc('clara_resumo_periodo', { p_empresa: e, p_inicio: inicio, p_fim: fim })), periodo_padrao_mes_anterior: !a.inicio && !a.fim };
+            break;
+          }
           case 'clara_dependencia_definir': v = await rpc('clara_dependencia_definir', { p_empresa: await resolver(a), p_fatores: a.fatores }); break;
           case 'clara_empresa_atualizar': v = await rpc('clara_empresa_atualizar', { p_empresa: await resolver(a), p_nome: a.nome ?? null, p_contexto: a.contexto ?? null }); break;
           case 'clara_acesso_atualizar': {
