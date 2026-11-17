@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reunião de Vendas · Clara</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* Cockpit de 4 estágios para ligação de 20 min; a impressão gera um documento próprio */
+:root{
+  --navy:#102447; --navy-2:#1b3360; --navy-3:#2b4576; --gold:#c8a23a; --gold-c:#f6edd4;
+  --tinta:#15213a; --tinta-2:#5a6880; --tinta-3:#8c99ab;
+  --papel:#fbfbfc; --cartao:#fff; --linha:#e3e7ee; --campo:#f4f6f9;
+  --baixa:#14a07e; --moderada:#2388a9; --alta:#d78a32; --critica:#c4472b;
+  --ui:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+  --doc:'Newsreader',Georgia,'Times New Roman',serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--papel);color:var(--tinta);font:400 15px/1.5 var(--ui);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+.eyebrow{font:700 10px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--tinta-3)}
+
+.topo{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff}
+.topo-in{max-width:1180px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.marca{font:500 17px/1 var(--doc);white-space:nowrap}
+.marca b{font-weight:500;color:var(--gold)}
+.passos{display:flex;gap:2px;flex-wrap:wrap;flex:1;min-width:0}
+.passo{background:transparent;border:0;color:#9fb0cd;padding:7px 12px;border-radius:7px;cursor:pointer;font:600 12.5px/1 var(--ui);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.passo:hover{background:rgba(255,255,255,.07);color:#fff}
+.passo[aria-current="true"]{background:#fff;color:var(--navy)}
+.passo i{font-style:normal;font-size:10px;opacity:.65;font-variant-numeric:tabular-nums}
+.relogio{display:flex;align-items:center;gap:9px;white-space:nowrap}
+.tempo{font:600 17px/1 var(--ui);font-variant-numeric:tabular-nums;min-width:58px;text-align:right}
+.tempo.estourou{color:#ffb3a6}
+.mini{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;padding:6px 11px;border-radius:7px;cursor:pointer;font:600 12px/1 var(--ui)}
+.mini:hover{background:rgba(255,255,255,.2)}
+
+main{max-width:1180px;margin:0 auto;padding-block:26px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.cabeca{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--linha)}
+.cabeca h2{font:400 29px/1.15 var(--doc)}
+.cabeca p{margin:5px 0 0;color:var(--tinta-2);font-size:13.5px;max-width:58ch}
+.cronometro{font:600 11px/1 var(--ui);color:var(--tinta-3);letter-spacing:.04em;white-space:nowrap;padding-bottom:4px}
+
+.grade{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr))}
+
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo label{font:600 11px/1 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:var(--tinta-3)}
+.campo input,.campo select,.campo textarea{background:var(--cartao);border:1px solid var(--linha);border-radius:9px;padding:10px 12px;width:100%;font-family:inherit}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:2px solid var(--navy-2);outline-offset:1px;border-color:var(--navy-2)}
+.campo textarea{resize:vertical;min-height:120px;line-height:1.55}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.chips button{background:var(--cartao);border:1px dashed var(--tinta-3);border-radius:999px;padding:8px 14px;cursor:pointer;font:500 13px/1 var(--ui);color:var(--tinta-2)}
+.chips button:hover{border-style:solid;border-color:var(--navy-2);color:var(--navy)}
+.chips button[aria-pressed="true"]{background:var(--navy);border:1px solid var(--navy);color:#fff;font-weight:600}
+.req{background:var(--cartao);border:1px solid var(--linha);border-radius:11px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.req+.req{margin-top:9px}
+.req .t{flex:1;min-width:200px;font-size:14px;line-height:1.45}
+.req .t b{display:block;font-size:12.5px;color:var(--tinta-3);font-weight:500;margin-top:3px}
+.req.nao{border-color:#e9b7ac;background:#fdf6f4}
+.perfil{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.perfil .foto{width:104px;height:104px;border-radius:50%;object-fit:cover;background:var(--campo);border:1px solid var(--linha);flex:0 0 auto}
+.perfil .semfoto{width:104px;height:104px;border-radius:50%;background:var(--campo);border:1px dashed var(--tinta-3);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tinta-3);text-align:center;padding:10px;flex:0 0 auto}
+.perfil .lado{flex:1;min-width:240px;display:flex;flex-direction:column;gap:9px}
+input[type=file]{font-size:12.5px}
+.campo .nota{font-size:12px;color:var(--tinta-3)}
+
+.pergunta{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:16px 17px;display:flex;flex-direction:column;gap:11px}
+.pergunta+.pergunta{margin-top:11px}
+.fala{display:flex;gap:12px;align-items:flex-start}
+.fala span{flex:0 0 auto;width:23px;height:23px;border-radius:50%;background:var(--navy);color:#fff;font:700 11px/23px var(--ui);text-align:center;margin-top:2px}
+.fala q{font:400 19.5px/1.35 var(--doc);quotes:none;min-width:0}
+.porque{font-size:12.5px;color:var(--tinta-3);padding-left:35px;margin-top:-4px}
+.captura{padding-left:35px}
+.captura input{background:var(--campo);border:1px solid var(--linha);border-radius:9px;padding:10px 12px;width:100%}
+.captura input:focus{background:#fff;outline:2px solid var(--navy-2);outline-offset:1px}
+@media(max-width:560px){.porque,.captura{padding-left:0}}
+
+.opcoes{display:flex;gap:7px;flex-wrap:wrap}
+.opcoes button{background:var(--campo);border:1px solid var(--linha);border-radius:999px;padding:7px 13px;cursor:pointer;font:500 13px/1 var(--ui);color:var(--tinta-2)}
+.opcoes button:hover{border-color:var(--navy-2)}
+.opcoes button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+
+.rolagem{overflow-x:auto;border:1px solid var(--linha);border-radius:12px;background:var(--cartao)}
+table.procs{width:100%;border-collapse:collapse;font-size:13.5px}
+table.procs th{text-align:left;font:700 10px/1 var(--ui);letter-spacing:.11em;text-transform:uppercase;color:var(--tinta-3);padding:12px 11px;border-bottom:1px solid var(--linha);white-space:nowrap}
+table.procs td{padding:9px 11px;border-bottom:1px solid var(--linha);vertical-align:middle}
+table.procs tr:last-child td{border-bottom:0}
+table.procs input[type=text]{background:var(--campo);border:1px solid transparent;border-radius:7px;padding:8px 10px;width:100%;min-width:118px}
+table.procs input[type=text]:focus{background:#fff;border-color:var(--navy-2);outline:none}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:8px;overflow:hidden}
+.seg button{background:var(--cartao);border:0;border-right:1px solid var(--linha);padding:7px 10px;cursor:pointer;font:600 11.5px/1 var(--ui);color:var(--tinta-2)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.lixo{background:transparent;border:0;color:var(--tinta-3);cursor:pointer;font-size:17px;line-height:1;padding:4px 6px;border-radius:6px}
+.lixo:hover{color:var(--critica);background:#fdf0ed}
+.add{margin-top:11px;background:var(--navy);border:0;color:#fff;padding:10px 16px;border-radius:9px;cursor:pointer;font:600 13px/1 var(--ui)}
+.add:hover{background:var(--navy-2)}
+
+.faixa{display:inline-flex;align-items:center;gap:6px;font:700 10.5px/1 var(--ui);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.faixa::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.f-baixa{color:var(--baixa)}.f-moderada{color:var(--moderada)}.f-alta{color:var(--alta)}.f-critica{color:var(--critica)}
+.trilha{display:inline-flex;gap:3px;vertical-align:middle}
+.trilha i{display:block;width:17px;height:5px;border-radius:2px;background:var(--linha)}
+.trilha i.on{background:currentColor}
+
+.veredito{background:var(--navy);color:#fff;border-radius:14px;padding:26px 28px;margin-bottom:16px}
+.veredito .eyebrow{color:var(--gold)}
+.veredito p{font:400 25px/1.3 var(--doc);margin:9px 0 0;max-width:40ch}
+.veredito .sub{font:400 13.5px/1.55 var(--ui);color:#b7c4da;margin-top:13px;max-width:62ch}
+.achado{background:var(--cartao);border:1px solid var(--linha);border-left:3px solid var(--linha);border-radius:10px;padding:14px 16px}
+.achado.e-critica{border-left-color:var(--critica)}.achado.e-alta{border-left-color:var(--alta)}
+.achado.e-moderada{border-left-color:var(--moderada)}.achado.e-baixa{border-left-color:var(--baixa)}
+.achado h3{font:600 15px/1.3 var(--ui);margin-bottom:3px}
+.achado .quem{font-size:12.5px;color:var(--tinta-3);margin-bottom:9px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.achado ul{margin:0;padding-left:17px;font-size:13.5px;color:var(--tinta-2)}
+.achado li{margin-bottom:3px}
+.vazio{border:1px dashed var(--linha);border-radius:12px;padding:30px 20px;text-align:center;color:var(--tinta-3);font-size:14px}
+
+.plano{background:var(--cartao);border:1px solid var(--linha);border-radius:14px;padding:20px 22px}
+.plano.destaque{border-color:var(--navy);border-width:1.5px}
+.plano h3{font:400 22px/1.2 var(--doc);margin-bottom:3px}
+.plano .para{font-size:12.5px;color:var(--tinta-3);margin-bottom:15px}
+.linha-v{display:flex;align-items:baseline;gap:10px;padding-block:8px;border-top:1px solid var(--linha);font-size:13.5px}
+.linha-v .rot{flex:1;min-width:0;color:var(--tinta-2)}
+.linha-v .num{font:600 15px/1 var(--ui);font-variant-numeric:tabular-nums;white-space:nowrap}
+.linha-v.forte .rot{color:var(--tinta);font-weight:600}
+.linha-v.forte .num{font-size:20px;font-weight:700}
+.linha-v .num small{font-weight:500;font-size:12px;color:var(--tinta-3)}
+.inclui{margin:14px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--tinta-2)}
+.inclui li{padding-left:19px;position:relative;margin-bottom:5px}
+.inclui li::before{content:"";position:absolute;left:3px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.bonus{background:var(--gold-c);border:1px solid #e6d5a8;border-radius:10px;padding:13px 15px;margin-top:14px;font-size:13.5px;color:#6b5a26}
+.bonus b{color:#55461c}
+.semanas{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));margin-top:14px}
+.semana{background:var(--cartao);border:1px solid var(--linha);border-radius:10px;padding:14px}
+.semana .eyebrow{color:var(--navy-3)}
+.semana h4{font:600 14px/1.3 var(--ui);margin:6px 0 4px}
+.semana p{margin:0;font-size:12.5px;color:var(--tinta-2);line-height:1.5}
+.aviso{background:#fdfaf1;border:1px solid #ecdfbb;border-radius:10px;padding:13px 15px;font-size:13px;color:#6b5a26;margin-top:16px}
+.ajustes{background:var(--campo);border:1px solid var(--linha);border-radius:12px;padding:16px 17px;margin-top:22px}
+
+.rodape{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:28px;padding-top:18px;border-top:1px solid var(--linha)}
+.principal{background:var(--navy);border:0;color:#fff;padding:13px 22px;border-radius:10px;cursor:pointer;font:600 14px/1 var(--ui)}
+.principal:hover{background:var(--navy-2)}
+.secundario{background:var(--cartao);border:1px solid var(--linha);color:var(--tinta-2);padding:13px 18px;border-radius:10px;cursor:pointer;font:600 14px/1 var(--ui)}
+.secundario:hover{border-color:var(--tinta-3)}
+h3.secao{font:700 10px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--tinta-3);margin:26px 0 12px}
+h3.secao:first-of-type{margin-top:0}
+
+#impresso{display:none}
+body.apresentar .porque,
+body.apresentar .coach,
+body.apresentar .ajustes,
+body.apresentar .cabeca p{display:none!important}
+.modo{background:var(--gold);border:0;color:#2b2208;padding:6px 12px;border-radius:7px;cursor:pointer;font:700 11.5px/1 var(--ui);letter-spacing:.03em;white-space:nowrap}
+.modo.off{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:600}
+
+/* ================= IMPRESSÃO ================= */
+@page{size:A4;margin:16mm 15mm}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .topo,main,.naoimprime{display:none!important}
+  #impresso{display:block}
+  body{font-size:10.5pt;background:#fff}
+  .folha{page-break-after:always;position:relative}
+  .folha:last-child{page-break-after:auto}
+
+  /* capa sangrada */
+  .capa{height:297mm;margin:-16mm -15mm;padding:34mm 22mm;background:var(--navy);color:#fff;display:flex;flex-direction:column}
+  .capa .topo-c{font:500 13pt/1 var(--doc);color:#fff;letter-spacing:.01em}
+  .capa .topo-c b{font-weight:500;color:var(--gold)}
+  .capa .meio{margin-top:auto;margin-bottom:auto}
+  .capa .rule{height:3pt;width:30mm;background:var(--gold);margin:0 0 10mm}
+  .capa .kicker{font:700 8.5pt/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:5mm}
+  .capa h1{font:400 40pt/1.04 var(--doc);letter-spacing:-.015em;margin:0;max-width:135mm}
+  .capa h1 em{font-style:italic;color:#e9d9a8}
+  .capa .cliente{font:600 14pt/1.3 var(--ui);margin-top:14mm}
+  .capa .meta{font:400 10pt/1.75 var(--ui);color:#a9b9d4;margin-top:3mm}
+  .capa .pe{font:400 9pt/1.7 var(--ui);color:#8fa2c2;border-top:.5pt solid rgba(255,255,255,.22);padding-top:5mm}
+
+  /* páginas internas */
+  .p-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:.5pt solid var(--linha);padding-bottom:2.5mm;margin-bottom:7mm}
+  .p-top .n{font:500 9.5pt/1 var(--doc);color:var(--navy)}
+  .p-top .n b{font-weight:500;color:var(--gold)}
+  .p-top .pg{font:700 7.5pt/1 var(--ui);letter-spacing:.15em;text-transform:uppercase;color:var(--tinta-3)}
+  .p-tit{font:400 24pt/1.1 var(--doc);color:var(--navy);margin-bottom:3mm;letter-spacing:-.01em}
+  .p-sub{font-size:9.5pt;color:var(--tinta-2);margin-bottom:7mm;max-width:132mm;line-height:1.6}
+
+  .p-destaque{background:var(--navy);color:#fff;padding:9mm 10mm;margin-bottom:7mm;break-inside:avoid}
+  .p-destaque .k{font:700 7.5pt/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:4mm}
+  .p-destaque p{font:400 19pt/1.28 var(--doc);margin:0;max-width:125mm}
+  .p-destaque .sub{font:400 9.5pt/1.65 var(--ui);color:#b7c4da;margin-top:5mm;max-width:132mm}
+
+  .p-conta{display:flex;gap:7mm;align-items:center;border:.5pt solid var(--linha);border-left:3pt solid var(--gold);padding:6mm 7mm;margin-bottom:7mm;break-inside:avoid}
+  .p-conta .big{font:600 36pt/.9 var(--doc);color:var(--navy);white-space:nowrap}
+  .p-conta .txt{font-size:10pt;line-height:1.55;color:var(--tinta-2)}
+  .p-conta .txt b{color:var(--tinta)}
+
+  .p-mapa{margin-bottom:7mm}
+  .p-mapa .ln{display:flex;align-items:center;gap:4mm;padding:2.4mm 0;border-bottom:.5pt solid var(--linha)}
+  .p-mapa .ln:last-child{border-bottom:0}
+  .p-mapa .nm{flex:1;min-width:0;font:600 10pt/1.3 var(--ui)}
+  .p-mapa .qm{font-size:8.5pt;color:var(--tinta-3);width:34mm;text-align:right}
+  .trilha i{width:5mm;height:1.6mm}
+
+  .p-achado{border:.5pt solid var(--linha);border-left:2.5pt solid var(--tinta-3);padding:4.5mm 5.5mm;margin-bottom:3mm;break-inside:avoid}
+  .p-achado.e-critica{border-left-color:var(--critica)}.p-achado.e-alta{border-left-color:var(--alta)}
+  .p-achado.e-moderada{border-left-color:var(--moderada)}.p-achado.e-baixa{border-left-color:var(--baixa)}
+  .p-achado h3{font:600 11pt/1.3 var(--ui);margin:0 0 1.5mm}
+  .p-achado .quem{font-size:8.5pt;color:var(--tinta-3);margin-bottom:2.5mm}
+  .p-achado ul{margin:0;padding-left:5mm;font-size:9.5pt;color:var(--tinta-2);line-height:1.6}
+  .p-achado li{margin-bottom:.8mm}
+
+  .p-cart{border:.5pt solid var(--linha);padding:6mm 7mm;margin-bottom:4mm;break-inside:avoid}
+  .p-cart.forte{border:1.2pt solid var(--navy)}
+  .p-cart h3{font:400 17pt/1.1 var(--doc);color:var(--navy);margin-bottom:1mm}
+  .p-cart .para{font-size:8.5pt;color:var(--tinta-3);margin-bottom:4mm}
+  .p-val{display:flex;justify-content:space-between;align-items:baseline;gap:6mm;padding:2.2mm 0;border-top:.5pt solid var(--linha);font-size:9.5pt;color:var(--tinta-2)}
+  .p-val .n{font:600 11.5pt/1 var(--ui);color:var(--tinta);white-space:nowrap}
+  .p-val .n small{font:500 8pt/1 var(--ui);color:var(--tinta-3)}
+  .p-val.forte{border-top-width:1pt;border-top-color:var(--navy)}
+  .p-val.forte span:first-child{font-weight:700;color:var(--tinta)}
+  .p-val.forte .n{font-size:16pt;font-weight:700;color:var(--navy)}
+  .p-parcela{background:#f3f5f9;border-left:2.5pt solid var(--navy);padding:4mm 5mm;margin-top:4mm;break-inside:avoid}
+  .p-parcela .g{font:600 20pt/1 var(--ui);color:var(--navy);font-variant-numeric:tabular-nums}
+  .p-parcela .l{font-size:8.5pt;color:var(--tinta-2);margin-top:1.5mm}
+  .p-inclui{margin:4mm 0 0;padding:0;list-style:none;font-size:9.5pt;color:var(--tinta-2);line-height:1.5}
+  .p-inclui li{padding-left:5mm;position:relative;margin-bottom:1.4mm}
+  .p-inclui li::before{content:"";position:absolute;left:.8mm;top:1.5mm;width:1.6mm;height:1.6mm;border-radius:50%;background:var(--gold)}
+  .p-bonus{background:var(--gold-c);border:.5pt solid #e0cb95;padding:5mm 6mm;margin-top:4mm;break-inside:avoid}
+  .p-bonus .k{font:700 7.5pt/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:#8a6f20;margin-bottom:2.5mm}
+  .p-bonus p{margin:0;font:400 12pt/1.4 var(--doc);color:#55461c}
+
+  .p-rota{margin-top:6mm}
+  .p-rota .fila{display:flex;gap:0;margin-top:3mm}
+  .p-rota .et{flex:1;border-top:2pt solid var(--navy);padding:3mm 4mm 0 0;break-inside:avoid}
+  .p-rota .et .s{font:700 7pt/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5mm}
+  .p-rota .et h4{font:600 9.5pt/1.25 var(--ui);margin:0 0 1.5mm}
+  .p-rota .et p{margin:0;font-size:8pt;color:var(--tinta-2);line-height:1.45}
+  .p-fecho{border:.5pt solid var(--linha);border-top:3pt solid var(--gold);padding:6mm 7mm;margin-top:6mm;break-inside:avoid}
+  .p-fecho h4{font:400 15pt/1.2 var(--doc);color:var(--navy);margin-bottom:2.5mm}
+  .p-fecho p{margin:0;font-size:9.5pt;color:var(--tinta-2);line-height:1.6}
+  .p-fecho .ass{margin-top:5mm;font-size:9pt;color:var(--tinta);line-height:1.6}
+  .p-fecho .ass b{font-weight:600}
+  .p-nota{font-size:8pt;color:var(--tinta-2);line-height:1.6;border-top:.5pt solid var(--linha);padding-top:3.5mm;margin-top:6mm}
+  .p-sobre{display:flex;gap:10mm;align-items:flex-start;border-top:3pt solid var(--gold);padding-top:8mm;margin-top:4mm}
+  .p-sobre img{width:40mm;height:40mm;border-radius:50%;object-fit:cover;flex:0 0 auto}
+  .p-sobre .txt{flex:1}
+  .p-sobre .txt p{font:400 12.5pt/1.52 var(--doc);color:var(--tinta);margin:0 0 4.5mm;max-width:118mm}
+  .p-sobre .txt p:last-child{margin-bottom:0}
+  .p-sobre .ass{font:600 10pt/1.5 var(--ui);color:var(--navy);margin-top:6mm}
+  .p-sobre .ass span{display:block;font-weight:400;font-size:8.5pt;color:var(--tinta-3)}
+  .p-ouvi{background:#f3f5f9;border-left:3pt solid var(--navy);padding:5mm 6mm;margin-bottom:6mm;break-inside:avoid}
+  .p-ouvi .k{font:700 7.5pt/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--navy-3);margin-bottom:2.5mm}
+  .p-ouvi p{margin:0;font:400 12pt/1.45 var(--doc);color:var(--tinta)}
+  .faixa{font-size:7.5pt}
+}
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div class="topo-in">
+    <div class="marca">Clara <b>·</b> reunião de vendas</div>
+    <nav class="passos" id="passos"></nav>
+    <div class="relogio">
+      <button class="modo" id="bmodo">Apresentando</button>
+      <span class="tempo" id="tempo">20:00</span>
+      <button class="mini" id="btempo">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section id="s1"></section>
+  <section id="s2" hidden></section>
+  <section id="s3" hidden></section>
+  <section id="s4" hidden></section>
+  <div class="rodape">
+    <button class="secundario" id="limpar">Limpar para o próximo cliente</button>
+    <button class="principal" id="avancar">Continuar</button>
+  </div>
+</main>
+
+<div id="impresso"></div>
+
+<script>
+'use strict';
+
+const ETAPAS = [
+  ['Antes da ligação','0 min','O que você já sabe. Preencha antes de discar.'],
+  ['A conversa','3 → 13 min','Cinco perguntas. Você fala, clica e segue — não leia como formulário.'],
+  ['O retrato','13 → 16 min','A leitura da conversa, montada sozinha.'],
+  ['A proposta','16 → 20 min','Prazo, investimento, valores e o PDF.']
+];
+
+const SEGMENTOS = {
+  distribuidora:['Recebimento e conferência','Cadastro de produto e preço','Cotação e compra','Faturamento e emissão','Separação e entrega','Cobrança','Pós-venda e troca','Fechamento financeiro'],
+  comercio:['Atendimento e venda','Caixa e fechamento','Reposição e estoque','Compra com fornecedor','Troca e devolução','Vitrine e promoção','Conciliação de cartão','Fechamento do mês'],
+  clinica:['Agendamento e confirmação','Recepção e cadastro','Atendimento e prontuário','Convênio e faturamento','Cobrança de particular','Compra de material','Preparo de sala','Retorno e pós-atendimento'],
+  servicos:['Prospecção e proposta','Fechamento e contrato','Briefing e início','Execução e entrega','Aprovação do cliente','Cobrança e emissão','Pós-entrega e renovação','Fechamento do mês'],
+  escritorio:['Captação e proposta','Abertura de cliente','Rotina mensal do cliente','Entrega de obrigação','Atendimento e dúvida','Cobrança de honorário','Controle de prazo','Conferência e fechamento'],
+  industria:['Pedido e programação','Compra de insumo','Produção','Controle de qualidade','Expedição','Manutenção','Faturamento','Custo e fechamento'],
+  alimentacao:['Compra e recebimento','Pré-preparo','Produção e expedição','Atendimento e pedido','Caixa e fechamento','Controle de perda','Delivery e aplicativo','Limpeza e higiene'],
+  ecommerce:['Cadastro de produto e foto','Anúncio e preço','Atendimento pré-venda','Separação e embalagem','Postagem e rastreio','Troca e reclamação','Conciliação de marketplace','Fechamento e margem'],
+  generico:['Venda e atendimento','Entrega do serviço ou produto','Compra e fornecedor','Faturamento e emissão','Cobrança','Financeiro e pagamentos','Contratação e treinamento','Fechamento do mês']
+};
+const RAMOS = [['generico','Outro / genérico'],['distribuidora','Distribuidora / atacado'],['comercio','Comércio / loja'],
+  ['clinica','Clínica / consultório'],['servicos','Serviços / agência'],['escritorio','Escritório (contábil, advocacia)'],
+  ['industria','Indústria pequena / produção'],['alimentacao','Alimentação / restaurante'],['ecommerce','E-commerce / marketplace']];
+
+const SOBRE_PADRAO = 'Camila Santos. Onze anos em operações, dentro de empresas, cuidando de processos, indicadores e equipe. Depois empreendi a minha própria transportadora e vivi do outro lado: a dona que não consegue sair de férias porque a operação mora na cabeça dela e na de mais três pessoas.\nA Clara nasceu dessas duas cadeiras. Ela faz o que eu fazia como gerente — e fica disponível para empresas que não têm como contratar uma.';
+
+const REQUISITOS = [
+  ['reqMapa','Separar cerca de uma hora para conversar com a Clara e mapear a operação','Sem isso não existe instalação. É o requisito que mais atrasa entrega.'],
+  ['reqTime','Ter a equipe com celular ou computador no trabalho','Quem não acessa o painel não executa processo, e a nota não cai.'],
+  ['reqIA','Assinatura própria do Claude para quem vai usar a Clara no chat','R$ 120 a R$ 150 por pessoa, por mês, paga direto à Anthropic. Não está na mensalidade.']
+];
+
+const vazio = () => ({
+  empresa:'', ramo:'generico', segmento:'', pessoas:'', digitais:'', contato:'', cargo:'', decisao:'',
+  reqMapa:'', reqTime:'', reqIA:'', prazo:'', orcamento:'', sobreMim:SOBRE_PADRAO, foto:'',
+  iaHoje:'', iaAssina:'',
+  ferias:'', chaveNome:'', chaveOque:'', tempo:'', escrito:'', aprende:'',
+  procs:[],
+  setup:4970, parcelas:1, parcelaValor:'',
+  mensal:350, clarasInclusas:2, painelInclusos:3, qtdClara:2, qtdPainel:3, vClara:120, vPainel:70,
+  carencia:0, bonusQtd:1, bonusMeses:3, meses:6, validade:7
+});
+
+let M = vazio(), etapa = 0, modo = 'show';
+
+const CHAVE = 'clara-reuniao-v5';        // dados deste cliente
+const PERFIL = 'clara-consultora-perfil'; // foto e texto da Camila, valem para todos os arquivos
+function salvar(){
+  try{
+    const c = Object.assign({}, M); delete c.foto; delete c.sobreMim;
+    localStorage.setItem(CHAVE, JSON.stringify(c));
+    localStorage.setItem(PERFIL, JSON.stringify({foto:M.foto, sobreMim:M.sobreMim}));
+  }catch(e){}
+}
+function carregar(){
+  try{ const b = localStorage.getItem(CHAVE); if(b) M = Object.assign(vazio(), JSON.parse(b)); }catch(e){}
+  try{ const q = localStorage.getItem(PERFIL); if(q){ const d = JSON.parse(q);
+    if(d.foto) M.foto = d.foto; if(d.sobreMim) M.sobreMim = d.sobreMim; } }catch(e){}
+}
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v).replace(/\./g,'').replace(',','.')); return isNaN(n)?0:n; };
+const inte = v => Math.max(0, Math.round(num(v)));
+const reais = (v,d) => 'R$ ' + num(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});
+const plural = (n,s,p) => n === 1 ? s : p;
+const FAIXAS = {critica:'crítica',alta:'alta',moderada:'moderada',baixa:'baixa'};
+const ORDEM = ['baixa','moderada','alta','critica'];
+
+/* Leitura preliminar da conversa — não é a Nota de Dependência.
+   A nota oficial nasce no mapeamento, com a equipe. */
+function risco(p){
+  const n = (p.crit==='alta'?2:p.crit==='media'?1:0) + (p.backup?0:2) + (p.doc?0:1);
+  return n>=4?'critica' : n===3?'alta' : n===2?'moderada' : 'baixa';
+}
+const prontos = () => M.procs.filter(p => p.nome.trim());
+const expostos = () => prontos().filter(p => ['critica','alta'].includes(risco(p)));
+const trilha = r => { const i = ORDEM.indexOf(r);
+  return '<span class="trilha f-'+r+'">'+ORDEM.map((_,k)=>'<i'+(k<=i?' class="on"':'')+'></i>').join('')+'</span>'; };
+
+function oQueClaraFaz(p){
+  const a = [];
+  if(!p.doc) a.push('Manual Vivo: o passo a passo de <b>'+esc(p.nome)+'</b> escrito e aberto no celular de quem executa.');
+  if(!p.backup) a.push('Hoje só '+(p.quem.trim()?'<b>'+esc(p.quem)+'</b>':'uma pessoa')+' executa. A nota cai quando uma segunda pessoa executar — com registro no painel, não com promessa.');
+  if(p.backup && !p.doc) a.push('Duas pessoas sabem fazer, mas nada está escrito: se as duas saírem junto, o processo vai com elas.');
+  if(p.crit==='alta') a.push('Entra na primeira onda do mapeamento, antes dos processos de apoio.');
+  if(p.doc && p.backup) a.push('Já está em bom estado — a Clara acompanha para não voltar a concentrar.');
+  return a;
+}
+
+function veredito(){
+  const t = prontos().length, e = expostos().length;
+  if(!t) return {titulo:'Faltam os processos da conversa.', sub:'Volte à etapa anterior e anote o que apareceu.', t:0, e:0};
+  let titulo;
+  if(M.ferias.trim()) titulo = 'Se você sair 15 dias, para: ' + M.ferias.trim().replace(/\.$/,'') + '.';
+  else if(e) titulo = e + ' de ' + t + ' processos dependem de uma pessoa só.';
+  else titulo = 'A operação já tem mais de uma pessoa em cada processo crítico.';
+  const q = [];
+  q.push(e + ' de ' + t + ' ' + plural(t,'processo','processos') + ' que conversamos ' + plural(e,'está','estão') + ' concentrado' + (e===1?'':'s') + ' ou sem registro.');
+  if(M.chaveNome.trim()) q.push(M.chaveNome.trim() + ' é hoje o ponto mais frágil' + (M.chaveOque.trim()? ': ' + M.chaveOque.trim().replace(/\.$/,'') : '') + '.');
+  if(M.escrito==='nada') q.push('Nada está escrito, então o conhecimento existe só na memória de quem faz.');
+  if(M.escrito==='velho') q.push('O que existe escrito está velho, e ninguém confia no que não é atualizado.');
+  if(M.aprende==='olhando') q.push('Quem entra aprende olhando outra pessoa fazer — custa o tempo de duas pessoas, e cada um aprende diferente.');
+  if(M.aprende==='dono') q.push('Hoje é você quem ensina cada pessoa nova, uma por uma.');
+  if(M.tempo.trim()) q.push('E o seu tempo segue preso em ' + M.tempo.trim().replace(/\.$/,'') + '.');
+  return {titulo, sub:q.join(' '), t, e};
+}
+
+/* ---------- dinheiro ---------- */
+const clarasExtras = () => Math.max(0, inte(M.qtdClara) - inte(M.clarasInclusas));
+const custoClaras  = () => clarasExtras() * num(M.vClara);
+const painelExtras = () => Math.max(0, inte(M.qtdPainel) - inte(M.painelInclusos));
+const custoPainel  = () => painelExtras() * num(M.vPainel);
+const mensalTotal  = () => num(M.mensal) + custoClaras() + custoPainel();
+const parcelas     = () => Math.min(18, Math.max(1, inte(M.parcelas) || 1));
+const parcela      = () => M.parcelaValor !== '' && num(M.parcelaValor) > 0 ? num(M.parcelaValor) : num(M.setup) / parcelas();
+const setupTotal   = () => M.parcelaValor !== '' && num(M.parcelaValor) > 0 ? parcela() * parcelas() : num(M.setup);
+const hoje         = () => parcela() + (inte(M.carencia) > 0 ? 0 : mensalTotal());
+const acessos      = () => inte(M.qtdClara) + inte(M.qtdPainel);
+
+const SEMANAS = [
+  ['Semana 1','Boas-vindas e mapeamento','Nossa primeira conversa: combinamos prazos e instalo com você o mapeamento. Depois você conversa com a Clara sobre a sua operação, no seu ritmo, e me envia o resultado.'],
+  ['Semana 2','Implantação e treinamento','Eu preparo a Clara da sua empresa. Na nossa segunda conversa o painel já está pronto: revisamos juntos e treino você e o time.'],
+  ['Semana 3','Primeira leitura','Conferimos o que o time já executou, quem ainda não entrou e o que travou. É aqui que a adoção se corrige, com tempo de corrigir.'],
+  ['Semana 4','Fechamento e plano','O que mudou em número, o relatório de evolução e o que entra no próximo ciclo.']
+];
+
+function barra(){
+  document.getElementById('passos').innerHTML = ETAPAS.map((e,i) =>
+    '<button class="passo" data-i="'+i+'" aria-current="'+(i===etapa)+'"><i>'+(i+1)+'</i>'+esc(e[0])+'</button>').join('');
+}
+function cabeca(){
+  const e = ETAPAS[etapa];
+  return '<div class="cabeca"><div><h2>'+esc(e[0])+'</h2><p>'+esc(e[2])+'</p></div><div class="cronometro">'+esc(e[1])+'</div></div>';
+}
+function campo(k,rot,tipo,nota,ph){
+  return '<div class="campo"><label for="f-'+k+'">'+esc(rot)+'</label>'+
+    '<input id="f-'+k+'" type="'+(tipo||'text')+'" value="'+esc(M[k])+'" placeholder="'+esc(ph||'')+'" data-k="'+k+'">'+
+    (nota?'<span class="nota">'+esc(nota)+'</span>':'')+'</div>';
+}
+function seletor(k,rot,ops,nota){
+  return '<div class="campo"><label for="f-'+k+'">'+esc(rot)+'</label><select id="f-'+k+'" data-k="'+k+'">'+
+    ops.map(o => '<option value="'+esc(o[0])+'"'+(String(M[k])===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>').join('')+
+    '</select>'+(nota?'<span class="nota">'+esc(nota)+'</span>':'')+'</div>';
+}
+function area(k,rot,nota){
+  return '<div class="campo"><label for="f-'+k+'">'+esc(rot)+'</label><textarea id="f-'+k+'" data-k="'+k+'">'+esc(M[k])+'</textarea>'+
+    (nota?'<span class="nota">'+esc(nota)+'</span>':'')+'</div>';
+}
+function paragrafos(t){
+  return String(t||'').split('\n').map(x => x.trim()).filter(Boolean).map(x => '<p>'+esc(x)+'</p>').join('');
+}
+function opcoes(k,lista){
+  return '<div class="opcoes">'+lista.map(o =>
+    '<button type="button" data-set="'+k+'" data-v="'+esc(o[0])+'" aria-pressed="'+(String(M[k])===String(o[0]))+'">'+esc(o[1])+'</button>').join('')+'</div>';
+}
+
+function etapa1(){
+  const pes = inte(M.pessoas), dig = inte(M.digitais);
+  const alerta = (pes && dig && dig < pes/2)
+    ? '<div class="aviso coach"><b>Atenção antes de propor.</b> '+(pes-dig)+' de '+pes+' pessoas não usam celular ou computador no trabalho. Essas pessoas não entram no painel — e o painel é o que faz a nota cair. Considere propor para a parte administrativa primeiro, em vez da empresa inteira.</div>' : '';
+  return cabeca()+
+    '<h3 class="secao">A empresa</h3>'+
+    '<div class="grade g3">'+campo('empresa','Empresa')+seletor('ramo','Ramo (carrega os processos)',RAMOS,'Define as etiquetas da conversa')+campo('pessoas','Pessoas na empresa','number','Contando sócios')+'</div>'+
+    '<div class="grade g3" style="margin-top:14px">'+campo('segmento','Segmento, nas palavras dele','text','Vai no PDF','Ex.: distribuidora de cosméticos')+campo('contato','Com quem você vai falar')+campo('cargo','Cargo')+'</div>'+
+    '<div class="grade g3" style="margin-top:14px">'+campo('digitais','Quantas usam celular ou computador','number','Só essas entram no painel')+'</div>'+
+    alerta+
+    '<h3 class="secao">A decisão</h3>'+
+    '<div class="pergunta"><div class="fala"><span>?</span><q>Além de você, mais alguém participa dessa decisão?</q></div>'+
+      '<div class="porque">Pergunte no começo, com naturalidade. Sem isso você pode fechar uma reunião ótima com quem não assina.</div>'+
+      '<div class="captura">'+opcoes('decisao',[['sozinho','Decide sozinho'],['socio','Com sócio'],['terceiro','Depende de outra pessoa'],['','Ainda não sei']])+'</div></div>'+
+    '<h3 class="secao">Os requisitos</h3>'+
+    '<div class="pergunta" style="margin-bottom:11px"><div class="fala"><span>!</span><q>Para a Clara funcionar, três coisas precisam existir do seu lado. Vou falar quais são e você me diz se dá.</q></div>'+
+      '<div class="porque">Requisito tem número e se responde com sim ou não. Quem cumpre percebe que é para ele. Quem não cumpre, você descobre no minuto dez e não depois do contrato.</div></div>'+
+    REQUISITOS.map(r => '<div class="req'+(M[r[0]]==='nao'?' nao':'')+'"><div class="t">'+esc(r[1])+'<b>'+esc(r[2])+'</b></div>'+
+      opcoes(r[0],[['sim','Dá'],['nao','Não dá'],['duvida','Em dúvida']])+'</div>').join('')+
+    (REQUISITOS.some(r => M[r[0]]==='nao')
+      ? '<div class="aviso coach"><b>Um requisito não cumprido.</b> Não force a venda inteira. Se o que faltou foi a assinatura de IA, ofereça a versão <b>só painel</b> — funciona no navegador, sem conta de IA para ninguém. Se foi a hora do mapeamento, o problema é prioridade: pergunte quando faria sentido retomar e marque.</div>' : '')+
+    '<div class="aviso coach" style="margin-top:16px"><b>O cliente já leu a página.</b> Ele sabe o que é a Clara, e o anúncio prometeu mostrar o que ela faria primeiro na empresa dele. Essa é a entrega da reunião — não comece apresentando produto.</div>';
+}
+
+function etapa2(){
+  const P = [
+    ['ferias','Se você tirasse 15 dias de férias de verdade, o que pararia?','Abre a conversa sem parecer entrevista e já entrega o processo mais crítico. Deixe responder inteiro, sem interromper.','Ex.: fechamento com fornecedor e aprovação de pedido'],
+    ['chaveNome','Quem é a pessoa que, se saísse amanhã, te daria mais trabalho?','Nome. Depois pergunte o que só ela sabe fazer.','Nome'],
+    ['chaveOque','— e o que só ela sabe fazer?','','Ex.: negociação com os dois fornecedores principais'],
+    ['tempo','O que mais consome o seu tempo e você sabe que não deveria ser você fazendo?','Essa é a dor que ele já reconhece. Vai virar o primeiro processo a documentar.','Ex.: conferir pedido antes de faturar']
+  ];
+  let h = cabeca()+'<h3 class="secao">Para abrir</h3>'+
+    '<div class="pergunta"><div class="fala"><span>0</span><q>Antes de eu mostrar qualquer coisa: o que vocês já fazem com inteligência artificial na empresa hoje?</q></div>'+
+      '<div class="porque">Abre leve, fala do mundo dele e não do seu produto. E te entrega três coisas de uma vez: a maturidade da empresa, se já pagam alguma IA (o requisito mais caro) e o vocabulário que ele usa.</div>'+
+      '<div class="captura"><input type="text" value="'+esc(M.iaHoje)+'" placeholder="Ex.: usam ChatGPT solto para escrever texto" data-k="iaHoje"></div>'+
+      '<div class="captura" style="margin-top:9px">'+opcoes('iaAssina',[['claude','Já assinam o Claude'],['outra','Assinam outra IA'],['nenhuma','Não assinam nenhuma'],['naosei','Não sei ainda']])+'</div>'+
+      (M.iaAssina==='claude' ? '<div class="porque" style="color:var(--baixa);font-weight:600">Já assinam o Claude — o requisito mais caro está resolvido.</div>' : '')+
+      (M.iaAssina==='nenhuma' ? '<div class="porque" style="color:var(--alta);font-weight:600">Nenhuma assinatura hoje. Considere abrir pela versão só painel e deixar a Clara no chat como passo dois.</div>' : '')+
+    '</div>'+
+    '<h3 class="secao">As perguntas</h3>';
+  P.forEach((p,i) => {
+    h += '<div class="pergunta"><div class="fala"><span>'+(p[2]?i+1:'↳')+'</span><q>'+esc(p[1])+'</q></div>'+
+      (p[2]?'<div class="porque">'+esc(p[2])+'</div>':'')+
+      '<div class="captura"><input type="text" value="'+esc(M[p[0]])+'" placeholder="'+esc(p[3])+'" data-k="'+p[0]+'"></div></div>';
+  });
+  h += '<div class="pergunta"><div class="fala"><span>4</span><q>Tem alguma coisa escrita de como se faz as coisas aí?</q></div>'+
+    '<div class="porque">Quase sempre a resposta é "não" ou "tem, mas tá velho". A própria resposta é o argumento.</div>'+
+    '<div class="captura">'+opcoes('escrito',[['nada','Nada escrito'],['velho','Tem, mas está velho'],['usa','Tem e a equipe usa']])+'</div></div>'+
+  '<div class="pergunta"><div class="fala"><span>5</span><q>Quando entra alguém novo, como essa pessoa aprende?</q></div>'+
+    '<div class="porque">Ele responde longo, porque é frustração antiga. Você só escuta e clica.</div>'+
+    '<div class="captura">'+opcoes('aprende',[['olhando','Olhando outro fazer'],['dono','O dono ensina'],['material','Tem material próprio']])+'</div></div>';
+
+  h += '<h3 class="secao">Os processos que apareceram</h3>'+
+    '<div class="pergunta" style="margin-bottom:13px"><div class="fala"><span>→</span><q>Em '+esc((RAMOS.find(r=>r[0]===M.ramo)||RAMOS[0])[1].toLowerCase())+', normalmente quem concentra é '+esc((SEGMENTOS[M.ramo]||SEGMENTOS.generico).slice(0,3).join(', ').toLowerCase())+'. Na sua, quais desses dependem de uma pessoa só?</q></div>'+
+      '<div class="porque">Clique nas etiquetas conforme ele falar. Não precisa digitar nada — só renomeie se ele usar outra palavra.</div></div>'+
+    chips()+
+    '<div class="rolagem"><table class="procs"><thead><tr><th>Processo</th><th>Quem faz hoje</th><th>Se parar</th><th>Mais alguém sabe?</th><th>Está escrito?</th><th></th></tr></thead><tbody>';
+  if(!M.procs.length) h += '<tr><td colspan="6" style="color:var(--tinta-3);padding:20px 11px">Clique numa etiqueta acima para começar.</td></tr>';
+  M.procs.forEach((p,i) => {
+    const sg = (c,ops) => '<span class="seg">'+ops.map(o =>
+      '<button type="button" data-p="'+i+'" data-c="'+c+'" data-v="'+o[0]+'" aria-pressed="'+
+      (c==='crit' ? (p.crit===o[0]) : (p[c]===(o[0]==='1')))+'">'+o[1]+'</button>').join('')+'</span>';
+    h += '<tr>'+
+      '<td><input type="text" value="'+esc(p.nome)+'" placeholder="Ex.: Faturamento" data-p="'+i+'" data-c="nome"></td>'+
+      '<td><input type="text" value="'+esc(p.quem)+'" placeholder="opcional" data-p="'+i+'" data-c="quem"></td>'+
+      '<td>'+sg('crit',[['alta','Para a empresa'],['media','Atrasa'],['baixa','Dá pra esperar']])+'</td>'+
+      '<td>'+sg('backup',[['1','Sim'],['0','Não']])+'</td>'+
+      '<td>'+sg('doc',[['1','Sim'],['0','Não']])+'</td>'+
+      '<td><button class="lixo" data-del="'+i+'" aria-label="Remover processo">×</button></td></tr>';
+  });
+  return h + '</tbody></table></div><button class="add" id="addproc">+ Processo</button>';
+}
+
+function chips(){
+  const lib = SEGMENTOS[M.ramo] || SEGMENTOS.generico;
+  const tem = n => M.procs.some(p => p.nome.trim().toLowerCase() === n.toLowerCase());
+  return '<div class="chips">'+lib.map(n =>
+    '<button type="button" data-chip="'+esc(n)+'" aria-pressed="'+tem(n)+'">'+esc(n)+'</button>').join('')+'</div>';
+}
+
+function etapa3(){
+  const v = veredito(), lista = prontos();
+  let h = cabeca()+'<div class="veredito"><div class="eyebrow">Retrato preliminar · '+esc(M.empresa||'a sua operação')+'</div>'+
+    '<p>'+esc(v.titulo)+'</p><div class="sub">'+esc(v.sub)+'</div></div>';
+  if(!lista.length) return h + '<div class="vazio">Anote os processos na etapa anterior para o retrato aparecer.</div>';
+  h += '<h3 class="secao">Onde está concentrado, e o que a Clara faz</h3><div class="grade g2">';
+  lista.slice().sort((a,b) => ORDEM.indexOf(risco(b)) - ORDEM.indexOf(risco(a))).forEach(p => {
+    const r = risco(p);
+    h += '<div class="achado e-'+r+'"><h3>'+esc(p.nome)+'</h3>'+
+      '<div class="quem">'+(p.quem.trim()?esc(p.quem):'sem responsável anotado')+' '+trilha(r)+' <span class="faixa f-'+r+'">'+FAIXAS[r]+'</span></div>'+
+      '<ul>'+oQueClaraFaz(p).map(x => '<li>'+x+'</li>').join('')+'</ul></div>';
+  });
+  return h + '</div><div class="aviso coach"><b>Como falar isso na reunião.</b> Este é o retrato da conversa de hoje — uma leitura, não uma medição. A <b>Nota de Dependência</b>, o número de 0 a 100 que acompanha a empresa mês a mês, nasce no mapeamento, com a equipe. Não prometa um número agora.</div>';
+}
+
+function etapa4(){
+  const car = inte(M.carencia), bq = inte(M.bonusQtd), bm = inte(M.bonusMeses);
+  let h = cabeca()+
+    '<h3 class="secao">Prazo e investimento</h3>'+
+    '<div class="pergunta"><div class="fala"><span>1</span><q>Quando você gostaria de ter isso rodando na sua empresa?</q></div>'+
+      '<div class="captura"><input type="text" value="'+esc(M.prazo)+'" placeholder="Ex.: até janeiro, antes da alta temporada" data-k="prazo"></div></div>'+
+    '<div class="pergunta"><div class="fala"><span>2</span><q>E quanto você consegue investir por mês para colocar isso de pé?</q></div>'+
+      '<div class="porque">Faça as duas antes de dizer o número. Se ele disser mais do que a sua conta dá, você fala o preço com firmeza. Se disser menos, você puxa carência e parcelas — que custam quase nada para você — em vez de cortar preço, que fica para sempre.</div>'+
+      '<div class="captura"><input type="text" value="'+esc(M.orcamento)+'" placeholder="Ex.: uns R$ 600 por mês" data-k="orcamento"></div></div>'+
+    '<h3 class="secao">Quem vai usar o quê</h3>'+
+    '<div class="grade g3">'+
+      campo('qtdClara','Pessoas com a Clara no chat','number','Plugin + painel. '+inte(M.clarasInclusas)+' já na mensalidade')+
+      campo('qtdPainel','Pessoas só com o painel','number','Sem plugin. '+inte(M.painelInclusos)+' já na mensalidade')+
+      '<div class="campo"><label>Total com acesso</label>'+
+        '<input type="text" value="'+acessos()+' '+plural(acessos(),'pessoa','pessoas')+'" readonly style="background:var(--campo)">'+
+        '<span class="nota">'+(inte(M.pessoas)?'de '+inte(M.pessoas)+' na empresa':'')+'</span></div>'+
+    '</div>';
+
+  h += '<h3 class="secao">A conta da mensalidade</h3><div class="plano">'+
+    '<div class="linha-v" style="border-top:0"><span class="rot">Pacote padrão · '+inte(M.clarasInclusas)+' '+plural(inte(M.clarasInclusas),'Clara','Claras')+' e painel para '+inte(M.painelInclusos)+'</span><span class="num">'+reais(M.mensal)+'</span></div>'+
+    (clarasExtras() ? '<div class="linha-v"><span class="rot">'+clarasExtras()+' '+plural(clarasExtras(),'Clara extra','Claras extras')+' × '+reais(M.vClara)+'</span><span class="num">'+reais(custoClaras())+'</span></div>' : '')+
+    (painelExtras() ? '<div class="linha-v"><span class="rot">'+painelExtras()+' '+plural(painelExtras(),'pessoa','pessoas')+' de painel além '+plural(painelExtras(),'da inclusa','das inclusas')+' × '+reais(M.vPainel)+'</span><span class="num">'+reais(custoPainel())+'</span></div>' : '')+
+    '<div class="linha-v forte"><span class="rot">Mensalidade</span><span class="num">'+reais(mensalTotal())+'<small>/mês</small></span></div>'+
+    '</div>';
+
+  h += '<h3 class="secao">A implantação</h3><div class="plano">'+
+    '<div class="linha-v" style="border-top:0"><span class="rot">Implantação</span><span class="num">'+reais(setupTotal())+'</span></div>'+
+    (parcelas() > 1 ? '<div class="linha-v forte"><span class="rot">Parcelado</span><span class="num">'+parcelas()+'× '+reais(parcela(),2)+'</span></div>' : '')+
+    '<div class="linha-v"><span class="rot">Desembolso na assinatura'+(car?' · mensalidade só no mês '+(car+1):'')+'</span><span class="num">'+reais(hoje(),2)+'</span></div>'+
+    (car ? '<div class="bonus"><b>Carência de '+car+' '+plural(car,'mês','meses')+'.</b> A mensalidade de '+reais(mensalTotal())+' começa a partir do mês '+(car+1)+'.</div>' : '')+
+    (bq && bm ? '<div class="bonus"><b>Bônus:</b> '+bq+' '+plural(bq,'consultoria','consultorias')+' por mês com a Camila, nos primeiros '+bm+' '+plural(bm,'mês','meses')+'.</div>' : '')+
+    '</div>';
+
+  h += '<h3 class="secao">Os 30 dias</h3><div class="semanas">'+SEMANAS.map(s =>
+    '<div class="semana"><div class="eyebrow">'+esc(s[0])+'</div><h4>'+esc(s[1])+'</h4><p>'+esc(s[2])+'</p></div>').join('')+'</div>';
+
+  h += '<div class="aviso"><b>Assinatura de IA, por conta da empresa.</b> Cada pessoa que usa a Clara no chat precisa da assinatura própria do Claude, hoje entre R$ 120 e R$ 150 por mês, por pessoa, paga direto à Anthropic. Não está na mensalidade. O painel não exige assinatura nenhuma.</div>';
+
+  h += '<div class="ajustes naoimprime"><h3 class="secao" style="margin-top:0">Ajustar valores</h3>'+
+    '<div class="grade g3">'+campo('setup','Implantação (R$)','number')+campo('parcelas','Parcelas (até 18)','number')+campo('parcelaValor','Parcela (R$) — opcional','number','Preenchido, manda na conta')+'</div>'+
+    '<div class="grade g3" style="margin-top:14px">'+campo('mensal','Pacote padrão (R$/mês)','number')+campo('clarasInclusas','Claras inclusas','number')+campo('painelInclusos','Painel incluso (pessoas)','number')+'</div>'+
+    '<div class="grade g3" style="margin-top:14px">'+campo('vClara','Clara extra (R$/mês)','number')+campo('vPainel','Painel extra (R$/mês por pessoa)','number')+campo('carencia','Carência (meses, até 3)','number')+'</div>'+'<div class="grade g3" style="margin-top:14px">'+campo('meses','Contrato mínimo (meses)','number')+campo('bonusQtd','Bônus: consultorias por mês','number')+campo('bonusMeses','Bônus: por quantos meses','number')+'</div>'+
+    '<div class="grade g3" style="margin-top:14px">'+campo('validade','Proposta válida por (dias)','number')+'</div></div>';
+
+  h += '<div class="ajustes naoimprime"><h3 class="secao" style="margin-top:0">Sobre você, no PDF</h3><div class="perfil">'+
+    (M.foto ? '<img class="foto" src="'+M.foto+'" alt="Sua foto">' : '<div class="semfoto">sem foto ainda</div>')+
+    '<div class="lado">'+area('sobreMim','Seu texto','Uma linha vazia separa os parágrafos')+
+      '<div class="campo"><label for="f-foto">Sua foto</label><input id="f-foto" type="file" accept="image/*" data-foto="1">'+
+      '<span class="nota">Escolha uma vez. Fica salva para as próximas reuniões.</span></div>'+
+      (M.foto ? '<div><button class="secundario" id="tirafoto" style="padding:8px 14px;font-size:12.5px">Remover foto</button></div>' : '')+
+    '</div></div></div>';
+  return h;
+}
+
+/* ---------- documento impresso ---------- */
+function documento(){
+  const v = veredito(), lista = prontos(), d = new Date();
+  const dia = d.toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});
+  const val = new Date(d.getTime() + inte(M.validade)*86400000).toLocaleDateString('pt-BR');
+  const car = inte(M.carencia), bq = inte(M.bonusQtd), bm = inte(M.bonusMeses);
+  const topo = p => '<div class="p-top"><span class="n">Clara <b>·</b> Gerente de Operações de IA</span><span class="pg">'+p+'</span></div>';
+  let h = '';
+
+  /* capa */
+  h += '<div class="folha"><div class="capa">'+
+    '<div class="topo-c">Clara <b>·</b> Gerente de Operações de IA</div>'+
+    '<div class="meio"><div class="rule"></div><div class="kicker">Retrato e proposta</div>'+
+      '<h1>A sua operação,<br><em>fora da cabeça</em><br>das pessoas.</h1>'+
+      '<div class="cliente">'+esc(M.empresa||'—')+'</div>'+
+      '<div class="meta">'+(M.segmento?esc(M.segmento)+'<br>':'')+
+        (inte(M.pessoas)?inte(M.pessoas)+' pessoas na empresa<br>':'')+
+        (M.contato?'Conversa com '+esc(M.contato)+(M.cargo?', '+esc(M.cargo):'')+'<br>':'')+dia+'</div></div>'+
+    '<div class="pe">Camila da Costa Santos Consultoria e Treinamentos · São Paulo/SP<br>empreendacomia.online</div>'+
+    '</div></div>';
+
+  /* retrato */
+  h += '<div class="folha">'+topo('O retrato')+
+    '<div class="p-tit">O que vimos na nossa conversa</div>'+
+    '<div class="p-sub">Esta é a leitura da conversa de '+dia+', com as suas próprias palavras. É um retrato preliminar: a Nota de Dependência, o número de 0 a 100 que passa a acompanhar a empresa mês a mês, nasce no mapeamento, junto com a equipe.</div>'+
+    '<div class="p-destaque"><div class="k">O que está em jogo</div><p>'+esc(v.titulo)+'</p><div class="sub">'+esc(v.sub)+'</div></div>';
+  if(lista.length){
+    h += '<div class="p-conta"><div class="big">'+v.e+'<span style="font-size:18pt">/'+v.t+'</span></div>'+
+      '<div class="txt"><b>'+plural(v.e,'processo','processos')+' concentrado'+(v.e===1?'':'s')+' em uma pessoa só, ou sem nada escrito.</b><br>'+
+      'Cada um deles é uma porta por onde a operação sai da empresa quando alguém falta, sai de férias ou pede demissão.</div></div>'+
+      '<div class="p-mapa">'+lista.slice().sort((a,b)=>ORDEM.indexOf(risco(b))-ORDEM.indexOf(risco(a))).map(p =>
+        '<div class="ln"><span class="nm">'+esc(p.nome)+'</span>'+trilha(risco(p))+
+        '<span class="faixa f-'+risco(p)+'">'+FAIXAS[risco(p)]+'</span><span class="qm">'+esc(p.quem||'—')+'</span></div>').join('')+'</div>'+
+      '<div class="p-nota" style="margin-top:0;border-top:0;padding-top:0">Concentração: de baixa a crítica, conforme o processo depender de uma pessoa só e não ter registro.</div></div>'+
+      '<div class="folha">'+topo('O que a Clara faz')+'<div class="p-tit">Processo por processo</div>'+
+      '<div class="p-sub">Para cada ponto que apareceu na conversa, o que muda na prática quando a Clara entra.</div>'+
+      lista.slice().sort((a,b)=>ORDEM.indexOf(risco(b))-ORDEM.indexOf(risco(a))).map(p =>
+        '<div class="p-achado e-'+risco(p)+'"><h3>'+esc(p.nome)+'</h3>'+
+        '<div class="quem">'+(p.quem?esc(p.quem)+' · ':'')+'concentração '+FAIXAS[risco(p)]+'</div>'+
+        '<ul>'+oQueClaraFaz(p).map(x => '<li>'+x+'</li>').join('')+'</ul></div>').join('')+'</div>';
+  } else h += '</div>';
+
+  /* quem vai cuidar disso */
+  h += '<div class="folha">'+topo('Quem vai cuidar disso')+
+    '<div class="p-tit">Quem vai cuidar disso com você</div>'+
+    '<div class="p-sub">A Clara é a ferramenta. A implantação é feita por uma pessoa, e essa pessoa sou eu.</div>'+
+    '<div class="p-sobre">'+
+      (M.foto ? '<img src="'+M.foto+'" alt="Camila Santos">' : '')+
+      '<div class="txt">'+paragrafos(M.sobreMim)+
+        '<div class="ass">Camila Santos<span>Camila da Costa Santos Consultoria e Treinamentos · São Paulo/SP</span>'+
+        '<span>empreendacomia.online</span></div></div></div></div>';
+
+  /* proposta */
+  const ouvi = [];
+  if(M.prazo.trim()) ouvi.push('quer isso rodando ' + M.prazo.trim().replace(/\.$/,''));
+  if(M.orcamento.trim()) ouvi.push('pode investir ' + M.orcamento.trim().replace(/\.$/,'') + ' por mês');
+  h += '<div class="folha">'+topo('A proposta')+
+    '<div class="p-tit">Proposta de instalação</div>'+
+    '<div class="p-sub">Válida até '+val+'. Contrato mínimo de '+inte(M.meses)+' meses. Os valores abaixo são da '+esc(M.empresa||'sua empresa')+', com '+inte(M.qtdClara)+' '+plural(inte(M.qtdClara),'pessoa','pessoas')+' na Clara e '+inte(M.qtdPainel)+' '+plural(inte(M.qtdPainel),'pessoa','pessoas')+' no painel.</div>'+
+    (ouvi.length ? '<div class="p-ouvi"><div class="k">O que você me disse</div><p>Você '+esc(ouvi.join(' e '))+'. A proposta abaixo foi montada para caber nisso.</p></div>' : '')+
+    '<div class="p-cart forte"><h3>Implantação</h3><div class="para">Mapeamento, instalação, treinamento do time e o primeiro mês de acompanhamento.</div>'+
+      '<div class="p-val forte"><span>Implantação</span><span class="n">'+reais(setupTotal())+'</span></div>'+
+      (parcelas()>1 ? '<div class="p-parcela"><div class="g">'+parcelas()+'× '+reais(parcela(),2)+'</div><div class="l">Parcelado em até 18 vezes. Total de '+reais(setupTotal())+'.</div></div>' : '')+
+    '</div>'+
+    '<div class="p-cart"><h3>Mensalidade</h3><div class="para">O painel, a Clara e o acompanhamento, todos os meses.</div>'+
+      '<div class="p-val"><span>Pacote padrão · '+inte(M.clarasInclusas)+' '+plural(inte(M.clarasInclusas),'Clara','Claras')+' e painel para '+inte(M.painelInclusos)+' '+plural(inte(M.painelInclusos),'colaborador','colaboradores')+'</span><span class="n">'+reais(M.mensal)+'</span></div>'+
+      (clarasExtras()?'<div class="p-val"><span>'+clarasExtras()+' '+plural(clarasExtras(),'Clara adicional','Claras adicionais')+' × '+reais(M.vClara)+'</span><span class="n">'+reais(custoClaras())+'</span></div>':'')+
+      (painelExtras()?'<div class="p-val"><span>'+painelExtras()+' '+plural(painelExtras(),'colaborador','colaboradores')+' de painel além '+plural(painelExtras(),'do incluso','dos inclusos')+' × '+reais(M.vPainel)+'</span><span class="n">'+reais(custoPainel())+'</span></div>':'')+
+      '<div class="p-val forte"><span>Mensalidade</span><span class="n">'+reais(mensalTotal())+'<small>/mês</small></span></div>'+
+      (car?'<div class="p-parcela"><div class="g">'+car+' '+plural(car,'mês','meses')+' de carência</div><div class="l">A mensalidade começa a partir do mês '+(car+1)+'.</div></div>':'')+
+      '<ul class="p-inclui">'+
+        '<li>Painel com login individual para cada pessoa da equipe</li>'+
+        '<li>Manual Vivo dos processos, executável pelo celular</li>'+
+        '<li>Nota de Dependência com acompanhamento mês a mês</li>'+
+        '<li>Boletim diário por pessoa e resumo para quem lidera</li>'+
+        '<li>Relatório mensal de evolução em PDF</li>'+
+        '<li>Suporte técnico sem limite de chamados</li>'+
+        '<li>Clara adicional: '+reais(M.vClara)+'/mês · pessoa só no painel: '+reais(M.vPainel)+'/mês</li>'+
+      '</ul>'+
+      (bq&&bm?'<div class="p-bonus"><div class="k">Bônus desta proposta</div><p>'+bq+' '+plural(bq,'consultoria','consultorias')+' por mês com a Camila, '+plural(bq,'incluída','incluídas')+' nos primeiros '+bm+' '+plural(bm,'mês','meses')+'.</p></div>':'')+
+    '</div>'+
+    '<div class="p-val forte" style="border-bottom:0"><span>Para começar, na assinatura</span><span class="n">'+reais(hoje(),2)+'</span></div>'+
+    '<div class="p-rota"><div class="p-tit" style="font-size:15pt;margin:0">Os seus primeiros 30 dias</div><div class="fila">'+
+      SEMANAS.map(s => '<div class="et"><div class="s">'+esc(s[0])+'</div><h4>'+esc(s[1])+'</h4><p>'+esc(s[2])+'</p></div>').join('')+'</div></div>'+
+    '<div class="p-fecho"><h4>Em menos de 30 dias, a sua operação deixa de morar na cabeça das pessoas.</h4>'+
+      '<p>Para começar, basta responder este documento. Eu marco a nossa primeira conversa e, a partir dela, você não precisa fazer nada técnico: eu cuido da instalação e entrego a Clara pronta, com o seu time treinado.</p>'+
+      '<div class="ass"><b>Camila Santos</b><br>Gerente de Operações de IA · Camila da Costa Santos Consultoria e Treinamentos<br>empreendacomia.online</div></div>'+
+    '<div class="p-nota"><b>Assinatura de IA, por conta da empresa.</b> Cada pessoa que usar a Clara no chat precisa da assinatura própria do Claude, paga direto à Anthropic, hoje entre R$ 120 e R$ 150 por mês, por pessoa. Não está incluída nos valores acima. O painel não exige assinatura nenhuma: funciona no navegador, para todo o time.'+
+    '<br><br><b>Sobre o retrato.</b> Os processos e as palavras deste documento são o que foi dito na conversa de '+dia+'. A Nota de Dependência oficial é calculada no mapeamento, com a participação da equipe, e passa a ser acompanhada no painel.</div></div>';
+  return h;
+}
+
+function pintar(){
+  barra();
+  const telas = [etapa1, etapa2, etapa3, etapa4];
+  for(let i=0;i<4;i++){
+    const el = document.getElementById('s'+(i+1));
+    el.hidden = (i !== etapa);
+    if(i === etapa) el.innerHTML = telas[i]();
+  }
+  document.getElementById('avancar').textContent = etapa < 3 ? 'Continuar' : 'Salvar PDF';
+  document.getElementById('impresso').innerHTML = documento();
+  salvar();
+}
+
+let pendente = null;
+function agendar(){
+  salvar();
+  document.getElementById('impresso').innerHTML = documento();
+  if(etapa === 0 || etapa === 3){
+    clearTimeout(pendente);
+    pendente = setTimeout(() => {
+      const f = document.activeElement, k = f && f.dataset ? f.dataset.k : null;
+      pintar();
+      if(k){ const n = document.querySelector('[data-k="'+k+'"]');
+        if(n){ n.focus(); try{ n.setSelectionRange(n.value.length, n.value.length); }catch(e){} } }
+    }, 650);
+  }
+}
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if(t.dataset.k){ M[t.dataset.k] = t.value; agendar(); }
+  else if(t.dataset.p !== undefined && t.dataset.c){ M.procs[+t.dataset.p][t.dataset.c] = t.value; agendar(); }
+});
+
+function aplicarModo(){
+  document.body.classList.toggle('apresentar', modo === 'show');
+  const b = document.getElementById('bmodo');
+  if(b){ b.textContent = modo === 'show' ? 'Apresentando' : 'Cabine'; b.classList.toggle('off', modo !== 'show'); }
+}
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  if(t.dataset && t.dataset.foto && t.files && t.files[0]){
+    const fr = new FileReader();
+    fr.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const lado = 420, c = document.createElement('canvas');
+        const r = Math.min(img.width, img.height);
+        c.width = c.height = lado;
+        const cx = c.getContext('2d');
+        cx.drawImage(img, (img.width-r)/2, (img.height-r)/2, r, r, 0, 0, lado, lado);
+        try{ M.foto = c.toDataURL('image/jpeg', 0.84); }catch(err){ M.foto = ''; }
+        pintar();
+      };
+      img.src = ev.target.result;
+    };
+    fr.readAsDataURL(t.files[0]);
+    return;
+  }
+  if(t.dataset && t.dataset.k){ M[t.dataset.k] = t.value; pintar(); }
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if(!b) return;
+  if(b.id === 'bmodo'){ modo = (modo === 'show') ? 'cabine' : 'show'; aplicarModo(); return; }
+  if(b.id === 'tirafoto'){ M.foto = ''; pintar(); return; }
+  if(b.dataset.chip){
+    const n = b.dataset.chip, i = M.procs.findIndex(p => p.nome.trim().toLowerCase() === n.toLowerCase());
+    if(i >= 0) M.procs.splice(i,1);
+    else M.procs.push({nome:n, quem:'', crit:'media', backup:false, doc:false});
+    pintar(); return;
+  }
+  if(b.dataset.i !== undefined){ etapa = +b.dataset.i; pintar(); window.scrollTo(0,0); return; }
+  if(b.dataset.set){ M[b.dataset.set] = (String(M[b.dataset.set]) === b.dataset.v) ? '' : b.dataset.v; pintar(); return; }
+  if(b.dataset.del !== undefined){ M.procs.splice(+b.dataset.del,1); pintar(); return; }
+  if(b.dataset.p !== undefined && b.dataset.c){
+    const p = M.procs[+b.dataset.p], c = b.dataset.c;
+    if(c === 'crit') p.crit = b.dataset.v; else p[c] = (b.dataset.v === '1');
+    pintar(); return;
+  }
+  if(b.id === 'addproc'){ M.procs.push({nome:'',quem:'',crit:'media',backup:false,doc:false}); pintar();
+    const cs = document.querySelectorAll('[data-c="nome"]'); if(cs.length) cs[cs.length-1].focus(); return; }
+  if(b.id === 'avancar'){ if(etapa < 3){ etapa++; pintar(); window.scrollTo(0,0); } else window.print(); return; }
+  if(b.id === 'limpar'){ if(window.confirm('Apagar os dados deste cliente? A sua foto e o seu texto continuam salvos.')){ const f = M.foto, t = M.sobreMim; M = vazio(); M.foto = f; M.sobreMim = t; etapa = 0; pararTempo(); pintar(); window.scrollTo(0,0); } return; }
+  if(b.id === 'btempo'){ rodando ? pararTempo() : iniciarTempo(); return; }
+});
+
+let restante = 1200, rodando = false, tique = null;
+function mostrarTempo(){
+  const el = document.getElementById('tempo'), neg = restante < 0, s = Math.abs(restante);
+  el.textContent = (neg?'+':'') + String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  el.classList.toggle('estourou', neg);
+}
+function iniciarTempo(){ rodando = true; document.getElementById('btempo').textContent = 'Pausar'; tique = setInterval(() => { restante--; mostrarTempo(); }, 1000); }
+function pararTempo(){ rodando = false; clearInterval(tique);
+  const b = document.getElementById('btempo'); if(b) b.textContent = restante === 1200 ? 'Iniciar' : 'Continuar';
+  if(restante === 1200) mostrarTempo(); }
+
+carregar();
+aplicarModo();
+mostrarTempo();
+pintar();
+</script>
+</body>
+</html>
