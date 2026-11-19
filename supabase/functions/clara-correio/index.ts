@@ -162,7 +162,23 @@ async function boletins(hora: number, diaSemana: number) {
       const recados = await sql(
         `clara_recados?empresa_id=eq.${emp.id}&para_pessoa_id=eq.${encodeURIComponent(v.pessoa_id)}&status=in.(aberto,visto)&email_enviado_em=is.null&select=assunto,mensagem&limit=5`,
       );
-      if (!paraHoje.length && !recados.length) continue; // dia tranquilo, nenhum e-mail
+      // Quem lidera também vê o que está preso na equipe: travado primeiro, depois vencido.
+      const chefia = ["proprietario", "gestor"].includes(String(v.perfil));
+      const travada = (t: any) => String(t.status ?? "").toLowerCase() === "impedida";
+      const equipe = chefia
+        ? tarefas
+            .filter(
+              (t: any) =>
+                t.responsavel_pessoa_id &&
+                t.responsavel_pessoa_id !== v.pessoa_id &&
+                !["concluida", "concluída", "feito"].includes(String(t.status ?? "").toLowerCase()) &&
+                (travada(t) || (t.prazo && t.prazo <= h0)),
+            )
+            .sort((a: any, b: any) => (travada(b) ? 1 : 0) - (travada(a) ? 1 : 0) || String(a.prazo ?? "").localeCompare(String(b.prazo ?? "")))
+            .slice(0, 8)
+        : [];
+
+      if (!paraHoje.length && !recados.length && !equipe.length) continue; // dia tranquilo, nenhum e-mail
 
       const dest = await emailDoUsuario(v.usuario_id);
       if (!dest) continue;
@@ -184,8 +200,19 @@ async function boletins(hora: number, diaSemana: number) {
           .join("")}
         ${recados.length ? secao(recados.length === 1 ? "UM RECADO" : "SEUS RECADOS") : ""}
         ${recados.map((r: any) => cartao(esc(r.assunto), "", esc(r.mensagem), null)).join("")}
+        ${equipe.length ? secao(equipe.length === 1 ? "UMA PENDÊNCIA DA EQUIPE" : "PENDÊNCIAS DA EQUIPE") : ""}
+        ${equipe
+          .map((t: any) =>
+            cartao(
+              esc(t.titulo ?? t.nome),
+              `${esc(nomeDe(t.responsavel_pessoa_id) || "sem responsável")}${travada(t) ? " · travado" : t.prazo < h0 ? ` · venceu ${dBR(t.prazo)}` : " · hoje"}`,
+              travada(t) && t.impedimento ? `<b style="color:#17243a">Travou em:</b> ${esc(t.impedimento)}` : "",
+              travada(t) || t.prazo < h0 ? "#c4472b" : "#d78a32",
+            ),
+          )
+          .join("")}
         ${botao("Abrir o painel", PAINEL + "/painel.html")}
-        ${rodape(emp.nome, "Você recebe este boletim só quando há algo no seu nome. Dia tranquilo, nenhum e-mail.")}`);
+        ${rodape(emp.nome, chefia ? "Você recebe quando há algo no seu nome ou preso com alguém da equipe. Dia tranquilo, nenhum e-mail." : "Você recebe este boletim só quando há algo no seu nome. Dia tranquilo, nenhum e-mail.")}`);
 
       const res = await enviar(dest, `Seu dia na ${emp.nome}`, html);
       feitos.push({ pessoa: v.pessoa_id, ...res });
